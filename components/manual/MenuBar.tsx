@@ -54,7 +54,7 @@ export const MenuBar = () => {
             <DrawerHeader>
               <div className="flex justify-between">
                 <DrawerTitle className="">
-                <p>let&apos;s connect</p>
+                let&apos;s connect
                 </DrawerTitle>
                 <DrawerTitle className="">
                   alif <span className="bg-primary text-secondary px-1">f.</span>
