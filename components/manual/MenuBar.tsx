@@ -2,7 +2,6 @@ import {
   Drawer,
   DrawerClose,
   DrawerContent,
-  DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
@@ -55,7 +54,7 @@ export const MenuBar = () => {
             <DrawerHeader>
               <div className="flex justify-between">
                 <DrawerTitle className="">
-                  let's connect
+                <p>let&apos;s connect</p>
                 </DrawerTitle>
                 <DrawerTitle className="">
                   alif <span className="bg-primary text-secondary px-1">f.</span>
