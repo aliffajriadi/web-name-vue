@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 export default function Home() {
   interface techStackType {
-    icon: unknown;
+    icon: string;
     label: string;
   }
   const techStack: techStackType[] = [
