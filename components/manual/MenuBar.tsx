@@ -1,6 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
+import { igdata, lkdata, gitdata, emaildata } from "@/lib/data";
+
 
 import {
   Drawer,
@@ -109,24 +111,32 @@ export const MenuBar = () => {
                 </DrawerTitle>
               </div>
               <div className="flex space-x-3 justify-around mt-3">
+                <Link href={gitdata}>
                 <Github size={40} />
+                </Link>
+                <Link href={igdata}>
                 <Instagram size={40} />
+                </Link>
+                <Link href={lkdata}>
                 <Linkedin size={40} />
+                </Link>
+                <Link onClick={() => toast("coming soon")} href="#">
                 <Mail size={40} />
+                </Link>
               </div>
             </DrawerHeader>
             <div className="px-4 py-2 space-y-3">
               <Button className="w-full">home</Button>
-              <Button className="w-full" variant="secondary">
+              <Button className="w-full" variant="secondary" onClick={() => toast("coming soon")}>
                 projects
               </Button>
-              <Button className="w-full" variant="secondary">
+              <Button className="w-full" variant="secondary" onClick={() => toast("coming soon")}>
                 contact
               </Button>
             </div>
             <DrawerFooter>
               <DrawerClose asChild>
-                <Button variant="outline">Tutup</Button>
+                <Button variant="outline">close</Button>
               </DrawerClose>
             </DrawerFooter>
           </DrawerContent>
