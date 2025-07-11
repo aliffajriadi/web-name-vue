@@ -33,7 +33,7 @@ export default function Home() {
     <div className="">
       <MenuBar />
       <div className="bg-primary mb-4 text-secondary px-6 py-10">
-        <h2 className="text-6xl">hello, im alif</h2>
+        <h1 className="text-6xl">hello, im alif</h1>
         <p className="text-2xl">soft dev</p>
         <Button variant="secondary" className="mt-2">
           contact me <Mail />

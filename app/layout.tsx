@@ -16,8 +16,30 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Alif F.",
   description: "aliffajriadi portofolio website",
-  keywords: ["alif fajriadi", "alif batam"],
+  keywords: ["alif fajriadi", "alif polibatam", "batam linux user group"],
+  openGraph: {
+    title: "Alif F.",
+    description: "Portofolio Alif Fajriadi - Software Developer",
+    url: "https://aliffajriadi.my.id",
+    siteName: "Alif F.",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "id_ID",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Alif F.",
+    description: "Portofolio Alif Fajriadi",
+    images: ["/og-image.jpg"],
+  },
 };
+
 
 export default function RootLayout({
   children,
@@ -26,28 +48,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;...&display=swap"
-          rel="stylesheet"
-        />
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
-      </head>
-
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased container max-w-6xl mx-auto md:px-72`}
       >
         {children}
-        <Toaster position="top-center"/>
+        <Toaster position="top-center" />
       </body>
     </html>
   );
