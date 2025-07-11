@@ -1,7 +1,7 @@
 "use client";
 
 import { toast } from "sonner";
-import { igdata, lkdata, gitdata, emaildata } from "@/lib/data";
+import { igdata, lkdata, gitdata } from "@/lib/data";
 
 
 import {
