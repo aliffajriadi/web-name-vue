@@ -1,9 +1,10 @@
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 interface sendType {
   name: string;
   message: string;
 }
+
 const sendMessages = async ({ name, message }: sendType) => {
   const defaultNumber: string = "62895603792033";
   try {
@@ -16,18 +17,15 @@ const sendMessages = async ({ name, message }: sendType) => {
     );
     return response.data;
   } catch (error: unknown) {
-    if (
-      typeof error === "object" &&
-      error !== null &&
-      "response" in error &&
-      typeof (error as any).response === "object"
-    ) {
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<{ message?: string }>;
       throw new Error(
-        (error as any).response?.data?.message || "Failed to send message"
+        axiosError.response?.data?.message || "Failed to send message"
       );
     }
 
     throw new Error("Failed to send message");
   }
 };
+
 export default sendMessages;
