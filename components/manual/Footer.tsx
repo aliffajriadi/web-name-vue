@@ -1,6 +1,6 @@
 import React from 'react'
 import { Instagram, Github, LinkedinIcon } from 'lucide-react'
-import { igdata, lkdata, gitdata, emaildata } from "@/lib/data";
+import { igdata, lkdata, gitdata } from "@/lib/data";
 import Link from 'next/link';
 
 const Footer = () => {
