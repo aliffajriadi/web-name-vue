@@ -54,8 +54,12 @@ export const MenuBar = () => {
       setName("");
       setMessage("");
       setOpen(false);
-    } catch (error: any) {
-      toast(error.message || "Failed to send message.");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast(error.message || "Failed to send message");
+      } else {
+        toast("Unknown error");
+      }
     } finally {
       setLoading(false);
     }
@@ -112,12 +116,12 @@ export const MenuBar = () => {
               </div>
             </DrawerHeader>
             <div className="px-4 py-2 space-y-3">
-              <Button className="w-full">Home</Button>
+              <Button className="w-full">home</Button>
               <Button className="w-full" variant="secondary">
-                Tentang
+                projects
               </Button>
               <Button className="w-full" variant="secondary">
-                Kontak
+                contact
               </Button>
             </div>
             <DrawerFooter>
@@ -141,23 +145,23 @@ export const MenuBar = () => {
               </TooltipTrigger>
             </DialogTrigger>
             <TooltipContent side="left">
-              <p>let's talk!</p>
+              <p>let&apos;s talk!</p>
             </TooltipContent>
           </Tooltip>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Send me a message</DialogTitle>
               <DialogDescription>
-                Got something in mind? Send me a message and let's talk!
+                Got something in mind? Send me a message and let&apos;s talk!
               </DialogDescription>
               <Input
-                placeholder="Your name"
+                placeholder="your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
               <Textarea
-                placeholder="Message"
+                placeholder="message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 required
@@ -165,12 +169,11 @@ export const MenuBar = () => {
             </DialogHeader>
 
             <Button onClick={handleClickSend} disabled={loading}>
-              {loading ? "Sending..." : "Send"}
+              {loading ? "sending..." : "send"}
             </Button>
           </DialogContent>
         </Dialog>
       </div>
-      
     </header>
   );
 };
