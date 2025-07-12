@@ -1,6 +1,8 @@
+"use client";
 import { MenuBar } from "@/components/manual/MenuBar";
+import { Typewriter } from "react-simple-typewriter";
 import { Button } from "@/components/ui/button";
-import { Mail } from "lucide-react";
+import { Mail, GraduationCap, Users } from "lucide-react";
 import Footer from "@/components/manual/Footer";
 import {
   laravel,
@@ -11,10 +13,10 @@ import {
   react,
   tailwind,
   typescript,
-  polibatam,
-  blug,
 } from "@/app/assets";
 import Image from "next/image";
+import { eduorga } from "@/lib/data";
+
 export default function Home() {
   interface techStackType {
     icon: string;
@@ -36,7 +38,23 @@ export default function Home() {
       <MenuBar />
       <div className="bg-primary mb-4 text-secondary px-6 py-10">
         <h1 className="text-6xl">hello, im alif</h1>
-        <p className="text-2xl">soft dev</p>
+        <p className="text-2xl font-medium">
+          <Typewriter
+            words={[
+              "software developer",
+              "fullstack developer",
+              "frontend developer",
+              "backend engineer",
+              "linux enthusiast",
+            ]}
+            loop={0} // 0 = infinite loop
+            cursor
+            cursorStyle="|"
+            typeSpeed={80}
+            deleteSpeed={50}
+            delaySpeed={1500}
+          />
+        </p>
         <Button variant="secondary" className="mt-2">
           contact me <Mail />
         </Button>
@@ -44,11 +62,13 @@ export default function Home() {
       <hr />
       <div className="px-6 py-8 space-y-2">
         <h3 className="text-2xl font-semibold">what about me?</h3>
-        <p className="text-sm text-slate-600">
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatum
-          laborum veritatis doloremque suscipit, perspiciatis voluptates
-          molestias! Voluptatem obcaecati quisquam alias voluptatum fugiat
-          aperiam, eaque illo optio error ratione molestiae nobis.
+        <p className="text-sm text-muted-foreground">
+          I'm a passionate software developer with a strong interest in building
+          efficient, user-friendly, and scalable applications. Currently
+          exploring full-stack development and IoT-based systems, I enjoy
+          turning ideas into real, functional solutions. My journey began with
+          curiosity and continues with continuous learning and real-world
+          projects.
         </p>
       </div>
       <hr />
@@ -68,26 +88,48 @@ export default function Home() {
       <hr />
       <div className="px-6 text-secondary py-8 bg-primary">
         <h4 className="text-2xl">my education & organization</h4>
-        <div className="flex py-3 items-center ">
-          <Image src={polibatam} alt="logo" className="w-20 h-20" />
-          <div className="ps-5">
-            <h5 className="hover:underline cursor-default">polytechinc state of batam</h5>
-            <p className="text-sm text-slate-200">informatics engineering</p>
-            <p className="text-sm text-slate-200">3nd semester, present</p>
+        {eduorga.map((item, idx) => (
+          <div key={idx}>
+            <div className="flex items-center py-4">
+              <Image
+                src={item.image}
+                alt={`${item.name} logo`}
+                className="w-20 h-20 rounded-md object-contain"
+              />
+              <div className="ps-5">
+                <p className="text-xs bg-muted-foreground w-fit text-foreground flex items-center gap-x-1 px-2 py-0.5 rounded">
+                  {item.category === "education" ? (
+                    <GraduationCap size={14} />
+                  ) : (
+                    <Users size={14} />
+                  )}
+                  {item.category}
+                </p>
+                <h5 className="text-base font-semibold hover:underline cursor-default capitalize">
+                  {item.name}
+                </h5>
+                <p className="text-sm text-slate-200">{item.position}</p>
+                <p className="text-sm text-slate-200">{item.tenure}</p>
+              </div>
+            </div>
+            {idx !== eduorga.length - 1 && (
+              <hr className="border-slate-300 my-2" />
+            )}
           </div>
-        </div>
-        <hr className="border" />
-        <div className="flex py-3 items-center ">
+        ))}
+
+        {/* <div className="flex py-3 items-center ">
           <Image src={blug} alt="logo" className="w-20 h-20" />
           <div className="ps-5">
+          <p className="text-xs bg-muted-foreground w-fit text-foreground flex items-center gap-x-1 px-1"><Users size={15}/> organization</p>
             <h5 className="hover:underline cursor-default">batam linux user group</h5>
             <p className="text-sm text-slate-200">division programing</p>
             <p className="text-sm text-slate-200"> &lt; 1 year, present</p>
           </div>
-        </div>
+        </div> */}
       </div>
       <hr />
-      <Footer/>
+      <Footer />
     </div>
   );
 }

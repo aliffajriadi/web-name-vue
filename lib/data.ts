@@ -1,5 +1,6 @@
-import { Project } from "@/types";
+import { Project, Eduorga } from "@/types";
 import { schedu, osc, aspirasikita, ifdclass, confess, ttwa, rewa, sentiment } from "@/app/assets/projects";
+import { polibatam, blug } from "@/app/assets";
 
 //data sosmed
 export const igdata: string = "https://www.instagram.com/alfjrd_/";
@@ -97,3 +98,19 @@ export const projects: Project[] = [
   },
 ];
 
+export const eduorga: Eduorga[] = [
+  {
+    name: "politechnic state of batam",
+    position: "informatics engineering",
+    tenure: "3rd semester - present",
+    image: polibatam,
+    category: "education"
+  },
+  {
+    name: "batam linux user group",
+    position: "division of programing",
+    tenure: "< 1 year - present",
+    image: blug,
+    category: "organization"
+  },
+];

@@ -10,3 +10,11 @@ export interface Project {
   githubUrl?: string;
   liveUrl?: string;
 }
+
+export interface Eduorga {
+  name: string;
+  position: string;
+  tenure: string;
+  category: string;
+  image: StaticImageData;
+}
