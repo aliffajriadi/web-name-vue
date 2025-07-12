@@ -35,8 +35,7 @@ const ProjectPage = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-semibold mb-4">my projects</h1>
           <p className="text-muted-foreground text-md max-w-2xl">
-            a collection of projects ive worked on, ranging from web
-            applications to mobile apps and desktop software.
+          a collection of my works including web apps, backend programs, and more.
           </p>
         </div>
 
