@@ -34,6 +34,7 @@ import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import sendMessages from "@/lib/api/contact";
 import { ContactForm } from "@/types/contactForm";
+import { usePathname } from "next/navigation";
 
 export const MenuBar = () => {
   const [name, setName] = useState("");
@@ -66,6 +67,7 @@ export const MenuBar = () => {
       setLoading(false);
     }
   };
+  const pathname: string = usePathname();
 
   return (
     <header className="w-full px-6 md:px-0 py-4 flex items-center justify-between">
@@ -76,18 +78,18 @@ export const MenuBar = () => {
 
       {/* Menu link desktop */}
       <div className="space-x-4 hidden md:block">
-        <Link href="/" className="hover:underline transition-all duration-200">
+        <Link href="/" className={`hover:underline transition-all duration-200 ${pathname === '/' ? 'underline' : ''}`}>
           home
         </Link>
         <Link
-          href="/projects"
-          className="hover:underline transition-all duration-200"
+          href="/project"
+          className={`hover:underline transition-all duration-200 ${pathname === '/project' ? 'underline' : ''}`}
         >
           projects
         </Link>
         <Link
           href="/contact"
-          className="hover:underline transition-all duration-200"
+          className={`hover:underline transition-all duration-200 ${pathname === '/contact' ? 'underline' : ''}`}
         >
           contact me
         </Link>
@@ -126,11 +128,12 @@ export const MenuBar = () => {
               </div>
             </DrawerHeader>
             <div className="px-4 py-2 space-y-3">
-              <Button className="w-full">home</Button>
-              <Button className="w-full" variant="secondary" onClick={() => toast("coming soon")}>
-                projects
+
+              <Button asChild className="w-full" variant={pathname === '/' ? 'default' : 'secondary'}><Link href="/">home</Link></Button>
+              <Button asChild className="w-full" variant={pathname === '/project' ? 'default' : 'secondary'}>
+                <Link href="/project">projects</Link>
               </Button>
-              <Button className="w-full" variant="secondary" onClick={() => toast("coming soon")}>
+              <Button className="w-full" variant={pathname === '/contact' ? 'default' : 'secondary'} onClick={() => toast("coming soon")}>
                 contact
               </Button>
             </div>
