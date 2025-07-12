@@ -63,7 +63,7 @@ export default function Home() {
       <div className="px-6 py-8 space-y-2">
         <h3 className="text-2xl font-semibold">what about me?</h3>
         <p className="text-sm text-muted-foreground">
-          I'm a passionate software developer with a strong interest in building
+          Im a passionate software developer with a strong interest in building
           efficient, user-friendly, and scalable applications. Currently
           exploring full-stack development and IoT-based systems, I enjoy
           turning ideas into real, functional solutions. My journey began with
