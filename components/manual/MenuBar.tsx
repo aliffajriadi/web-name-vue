@@ -133,8 +133,8 @@ export const MenuBar = () => {
               <Button asChild className="w-full" variant={pathname === '/project' ? 'default' : 'secondary'}>
                 <Link href="/project">projects</Link>
               </Button>
-              <Button className="w-full" variant={pathname === '/contact' ? 'default' : 'secondary'} onClick={() => toast("coming soon")}>
-                contact
+              <Button asChild className="w-full" variant={pathname === '/contact' ? 'default' : 'secondary'}>
+                <Link href="/contact">contact</Link>
               </Button>
             </div>
             <DrawerFooter>
