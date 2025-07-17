@@ -57,7 +57,7 @@ export default function Home() {
           />
         </p>
         <Button variant="secondary" className="mt-2">
-          <Link href="/contact" >contact me <Mail /></Link>
+          <Link href="/contact" className="flex items-center gap-1" >contact me <Mail /></Link>
           
         </Button>
       </div>
