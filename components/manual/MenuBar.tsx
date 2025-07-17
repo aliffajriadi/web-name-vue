@@ -44,7 +44,7 @@ export const MenuBar = () => {
 
   const handleClickSend = async () => {
     if (!name.trim() || !message.trim()) {
-      toast("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
 
       return;
     }
@@ -53,7 +53,7 @@ export const MenuBar = () => {
     try {
       const payload: ContactForm = { name, message };
       await sendMessages(payload);
-      toast("success sending message.");
+      toast.success("success sending message.");
       setName("");
       setMessage("");
       setOpen(false);
@@ -61,7 +61,7 @@ export const MenuBar = () => {
       if (error instanceof Error) {
         toast(error.message || "Failed to send message");
       } else {
-        toast("Unknown error");
+        toast.error(`error: ${error}`);
       }
     } finally {
       setLoading(false);
@@ -122,7 +122,7 @@ export const MenuBar = () => {
                 <Link href={lkdata}>
                 <Linkedin size={40} />
                 </Link>
-                <Link onClick={() => toast("coming soon")} href="#">
+                <Link onClick={() => toast.error("coming soon")} href="#">
                 <Mail size={40} />
                 </Link>
               </div>

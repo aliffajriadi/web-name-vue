@@ -25,7 +25,7 @@ const ContactPage = () => {
   const [loading, setLoading] = useState(false);
   const handleSending = async () => {
     if (!name.trim() || !message.trim()) {
-      toast("Please fill in all required fields.");
+      toast.error("Please fill in all required fields.");
 
       return;
     }
@@ -34,7 +34,7 @@ const ContactPage = () => {
       const payload: ContactForm = { name, message };
       await sendMessages(payload);
       console.log("success");
-      toast("sending message success fully");
+      toast.success("sending message success fully");
       setMessage("");
       setName("");
       setLoading(false);
