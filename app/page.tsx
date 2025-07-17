@@ -16,6 +16,7 @@ import {
 } from "@/app/assets";
 import Image from "next/image";
 import { eduorga } from "@/lib/data";
+import Link from "next/link";
 
 export default function Home() {
   interface techStackType {
@@ -56,7 +57,8 @@ export default function Home() {
           />
         </p>
         <Button variant="secondary" className="mt-2">
-          contact me <Mail />
+          <Link href="/contact" >contact me <Mail /></Link>
+          
         </Button>
       </div>
       <hr />
