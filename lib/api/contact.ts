@@ -4,6 +4,7 @@ interface sendType {
   name: string;
   message: string;
 }
+const api_key: string = "CUKIMAYANJAY7778yhuyjhhguywdbaswu909u98"
 
 const sendMessages = async ({ name, message }: sendType) => {
   const defaultNumber: string = "62895603792033";
@@ -13,6 +14,11 @@ const sendMessages = async ({ name, message }: sendType) => {
       {
         nomor: defaultNumber,
         pesan: `by: ${name}\n\n${message}`,
+      }, {
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": api_key
+        }
       }
     );
     return response.data;
