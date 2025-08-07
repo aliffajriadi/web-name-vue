@@ -1,5 +1,5 @@
 import { Project, Eduorga } from "@/types";
-import { schedu, osc, aspirasikita, ifdclass, confess, ttwa, rewa, sentiment } from "@/app/assets/projects";
+import { schedu, osc, aspirasikita, ifdclass, confess, ttwa, rewa, sentiment, blugWeb, botai } from "@/app/assets/projects";
 import { polibatam, blug } from "@/app/assets";
 
 //data sosmed
@@ -14,20 +14,30 @@ export const emaildata: string = "aliffajriadi@gmail.com";
 export const projects: Project[] = [
   {
     id: 1,
-    title: "schedu",
+    title: "SchedU",
     description:
-      "web-based application for managing academic schedules between students and teachers, featuring real-time notifications and calendar integration.",
+      "A web-based app for managing academic schedules between students and teachers, featuring calendar integration and real-time notifications.",
     category: "web",
     technologies: ["laravel", "tailwindcss", "mysql", "docker"],
     image: schedu,
     githubUrl: "close",
-    liveUrl: "close",
+    liveUrl: "https://polibatam.id/schedu",
   },
   {
     id: 2,
-    title: "open source competition website register",
+    title: "WhatsApp Bot AI - Event Organizer",
     description:
-      "web-based registration system for managing participants, competition categories, and verification in an open source event by batam linux user group.",
+      "An automated WhatsApp bot integrated with AI to handle participant registration, category selection, and verification for an open-source competition.",
+    category: "backend",
+    technologies: ["openwa", "llama2 8b"],
+    image: botai,
+    githubUrl: "close",
+  },
+  {
+    id: 3,
+    title: "OSC 2025 - Registration Website",
+    description:
+      "A responsive website for participant registration, competition category management, and verification system for Open Source Competition 2025.",
     category: "web",
     technologies: ["reactjs", "typescript", "tailwindcss", "googlespreadsheet"],
     image: osc,
@@ -35,20 +45,31 @@ export const projects: Project[] = [
     liveUrl: "https://osc-2025.pages.dev",
   },
   {
-    id: 3,
-    title: "aspirasikita",
+    id: 4,
+    title: "Aspirasikita",
     description:
-      "web platform for collecting and managing digital aspirations or suggestions from users in an organized and structured format.",
+      "A web platform to collect and manage digital suggestions and feedback from users in a structured format.",
     category: "web",
     technologies: ["nextjs", "typescript", "prisma", "postgresql"],
     image: aspirasikita,
     githubUrl: "close",
   },
   {
-    id: 4,
-    title: "website for class",
+    id: 5,
+    title: "BLUG Profile Website",
     description:
-      "static class website for sharing learning resources, announcements, and documentation with responsive design.",
+      "A static informational website for Batam Linux User Group to share learning resources, announcements, and event documentation.",
+    category: "web",
+    technologies: ["react.js", "tailwindcss"],
+    image: blugWeb,
+    githubUrl: "close",
+    liveUrl: "https://blug.polibatam.ac.id",
+  },
+  {
+    id: 6,
+    title: "Class Profile Website",
+    description:
+      "A static class website for sharing learning materials, announcements, and documentation, optimized with responsive design.",
     category: "web",
     technologies: ["vue.js", "tailwindcss"],
     image: ifdclass,
@@ -56,10 +77,10 @@ export const projects: Project[] = [
     liveUrl: "https://ifdclass.vercel.app",
   },
   {
-    id: 5,
-    title: "web confess class integrated bot whatsapp",
+    id: 7,
+    title: "Class Confession Website + WhatsApp Bot",
     description:
-      "anonymous confession website for students integrated with a whatsapp bot, allowing real-time message broadcasting.",
+      "An anonymous confession platform integrated with a WhatsApp bot for real-time message broadcasting to students.",
     category: "web",
     technologies: ["vue.js", "express", "mongodb", "openwa", "nodejs"],
     image: confess,
@@ -67,36 +88,37 @@ export const projects: Project[] = [
     liveUrl: "https://waifd.vercel.app",
   },
   {
-    id: 6,
-    title: "bot whatsapp downloading tiktok & instagram",
+    id: 8,
+    title: "WhatsApp Bot - TikTok & Instagram Downloader",
     description:
-      "whatsapp bot for downloading videos from tiktok and instagram using scraping techniques and openwa library.",
+      "A WhatsApp bot that downloads videos from TikTok and Instagram using scraping techniques and OpenWA library.",
     category: "backend",
     technologies: ["node.js", "javascript", "openwa", "scraping"],
     image: ttwa,
     githubUrl: "close",
   },
   {
-    id: 7,
-    title: "bot whatsapp for scheduling task",
+    id: 9,
+    title: "WhatsApp Bot - Task Scheduler",
     description:
-      "whatsapp automation bot for personal task scheduling, built with openwa and supports reminder features.",
+      "A personal task scheduling bot on WhatsApp, supporting automated reminders and time-based notifications.",
     category: "backend",
     technologies: ["node.js", "javascript", "openwa"],
     image: rewa,
     githubUrl: "close",
   },
   {
-    id: 8,
-    title: "api analytic sentiment notes",
+    id: 10,
+    title: "Sentiment Analysis API",
     description:
-      "api service for sentiment analysis on text-based notes using python and flask, designed for integration with writing tools.",
+      "A lightweight API for analyzing sentiment in text-based notes, designed for integration with writing or journaling tools.",
     category: "backend",
     technologies: ["python", "flask"],
     image: sentiment,
     githubUrl: "close",
   },
 ];
+
 
 export const eduorga: Eduorga[] = [
   {

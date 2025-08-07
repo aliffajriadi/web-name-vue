@@ -6,5 +6,7 @@ import confess from "./confess.png"
 import ttwa from "./ttwa.png"
 import rewa from "./rewa.png"
 import sentiment from "./sentimen.png"
+import blugWeb from "./blug.png"
+import botai from "./cus.png"
 
-export { rewa, schedu, osc, aspirasikita, ifdclass, confess, ttwa, sentiment }
+export { rewa, schedu, osc, botai, aspirasikita, ifdclass, confess, ttwa, sentiment, blugWeb }
