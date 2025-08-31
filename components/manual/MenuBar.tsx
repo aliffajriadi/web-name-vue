@@ -2,8 +2,6 @@
 
 import { toast } from "sonner";
 import { igdata, lkdata, gitdata } from "@/lib/data";
-
-
 import {
   Drawer,
   DrawerClose,
@@ -147,7 +145,7 @@ export const MenuBar = () => {
       </div>
 
       {/* Floating Contact Button */}
-      <div className="fixed bottom-6 right-6 z-30">
+      <div className="fixed bottom-6 right-6 z-30 md:hidden">
         <Dialog open={open} onOpenChange={setOpen}>
           <Tooltip>
             <DialogTrigger asChild>

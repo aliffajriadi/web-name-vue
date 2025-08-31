@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ModalHP from "@/components/manual/ModalHP";
+// import ModalHP from "@/components/manual/ModalHP";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alif F.",
+  title: "Alif Fajriadi",
   description: "aliffajriadi portofolio website",
   keywords: ["alif fajriadi", "alif polibatam", "batam linux user group"],
   openGraph: {
@@ -54,7 +54,7 @@ export default function RootLayout({
       >
         {children}
         <Toaster position="top-center" />
-        <ModalHP/>
+        {/* <ModalHP/> */}
       </body>
     </html>
   );

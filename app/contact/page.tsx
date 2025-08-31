@@ -23,91 +23,101 @@ const ContactPage = () => {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+
   const handleSending = async () => {
     if (!name.trim() || !message.trim()) {
       toast.error("Please fill in all required fields.");
-
       return;
     }
     setLoading(true);
     try {
       const payload: ContactForm = { name, message };
       await sendMessages(payload);
-      console.log("success");
-      toast.success("sending message success fully");
+      toast.success("Message sent successfully ✨");
       setMessage("");
       setName("");
-      setLoading(false);
     } catch (error) {
       toast(`error: ${error}`);
+    } finally {
+      setLoading(false);
     }
   };
+
   return (
-    <div>
+    <div className="bg-gradient-to-b from-white to-gray-50 min-h-screen flex flex-col">
       <MenuBar />
-      <section className="container mx-auto px-6 py-4">
-        <h2 className="text-2xl">contact me</h2>
-        <p>
-          feel free to reach out if you have any questions or just want to
-          connect through my social media.
+      <section className="container mx-auto px-6 py-10 flex-1">
+        <h2 className="text-3xl font-bold text-center mb-2">Get in Touch</h2>
+        <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-10">
+          Feel free to reach out if you have any questions, ideas, or just want
+          to connect
         </p>
 
-        <div className="space-y-5 mt-5">
+        {/* Social Media Section */}
+        <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
           <a
             href={igdata}
-            className="flex space-x-3 items-center hover:underline font-bold active:text-amber-950"
+            className="flex items-center gap-3 p-4 rounded-2xl border hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
           >
-            <Instagram size={50} />
+            <Instagram size={40}/>
             <div>
-              Instagram
-              <p className="text-muted-foreground font-normal">@alifajri_</p>
+              <span className="font-semibold">Instagram</span>
+              <p className="text-muted-foreground text-sm">@alifajri_</p>
             </div>
           </a>
 
           <a
             href={lkdata}
-            className="flex space-x-3 items-center hover:underline font-bold active:text-amber-950"
+            className="flex items-center gap-3 p-4 rounded-2xl border hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
           >
-            <Linkedin size={50} />
+            <Linkedin size={40} />
             <div>
-              Linkedin
-              <p className="text-muted-foreground font-normal">Alif Fajriadi</p>
+              <span className="font-semibold">LinkedIn</span>
+              <p className="text-muted-foreground text-sm">Alif Fajriadi</p>
             </div>
           </a>
 
           <a
             href={gitdata}
-            className="flex space-x-3 items-center hover:underline font-bold active:text-amber-950"
+            className="flex items-center gap-3 p-4 rounded-2xl border hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
           >
-            <Github size={50} />
+            <Github size={40} />
             <div>
-              Github
-              <p className="text-muted-foreground font-normal">aliffajriadi</p>
+              <span className="font-semibold">GitHub</span>
+              <p className="text-muted-foreground text-sm">aliffajriadi</p>
             </div>
           </a>
         </div>
 
-        <div className=" mt-10">
-          <Card>
-            <CardHeader>
-              <CardTitle>send me message</CardTitle>
-              <CardDescription>card Description</CardDescription>
+        {/* Contact Form */}
+        <div className="max-w-lg mx-auto mt-12">
+          <Card className="shadow-xl rounded-2xl">
+            <CardHeader className="text-center">
+              <CardTitle className="text-xl">Send me a Message</CardTitle>
+              <CardDescription>
+                I’ll get back to you as soon as possible
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-4">
               <Input
-                placeholder="your name"
+                placeholder="Your name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
               <Textarea
-                placeholder="your message"
+                placeholder="Your message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
+                rows={5}
               />
             </CardContent>
-            <CardFooter>
-              <Button onClick={handleSending} disabled={loading}>
-                {loading ? "sending message ........" : "send message"}
+            <CardFooter className="flex justify-center">
+              <Button
+                onClick={handleSending}
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? "Sending message..." : "Send Message"}
               </Button>
             </CardFooter>
           </Card>

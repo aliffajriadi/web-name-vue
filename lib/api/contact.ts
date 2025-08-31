@@ -5,7 +5,7 @@ interface sendType {
   message: string;
 }
 const api_key: string = "CUKIMAYANJAY7778yhuyjhhguywdbaswu909u98"
-
+const date = new Date();
 const sendMessages = async ({ name, message }: sendType) => {
   const defaultNumber: string = "62895603792033";
   try {
@@ -13,7 +13,12 @@ const sendMessages = async ({ name, message }: sendType) => {
       "https://api.aliffajriadi.my.id/botwa/api/kirim",
       {
         nomor: defaultNumber,
-        pesan: `by: ${name}\n\n${message}`,
+        pesan: `*Contact Website Portofolio*
+
+*Name*: ${name}
+*Message*: ${message}
+
+*Time Sent*: _${date.toLocaleString("en-US", { timeZone: "Asia/Jakarta" })}_`,
       }, {
         headers: {
           "Content-Type": "application/json",
