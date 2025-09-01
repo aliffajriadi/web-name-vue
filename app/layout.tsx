@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+// app/layout.tsx
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
+import GlobalLoader from "./loadingTr";
 import "./globals.css";
-// import ModalHP from "@/components/manual/ModalHP";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +15,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ini akan otomatis jadi <meta name="viewport">
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
+// ini global metadata
 export const metadata: Metadata = {
-  title: "Alif Fajriadi",
+  title: {
+    default: "Alif Fajriadi",
+    template: "%s | Alif Fajriadi",
+  },
   description: "aliffajriadi portofolio website",
   keywords: ["alif fajriadi", "alif polibatam", "batam linux user group"],
   openGraph: {
@@ -41,20 +54,18 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased container max-w-6xl mx-auto md:px-72`}
       >
-        {children}
+        <GlobalLoader>{children}</GlobalLoader>
         <Toaster position="top-center" />
-        {/* <ModalHP/> */}
       </body>
     </html>
   );

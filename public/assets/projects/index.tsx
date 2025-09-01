@@ -8,5 +8,6 @@ import rewa from "./rewa.png"
 import sentiment from "./sentimen.png"
 import blugWeb from "./blug.png"
 import botai from "./cus.png"
+import iot1 from "./iot1.webp"
 
-export { rewa, schedu, osc, botai, aspirasikita, ifdclass, confess, ttwa, sentiment, blugWeb }
+export { rewa, schedu, osc, botai, aspirasikita, ifdclass, confess, ttwa, sentiment, blugWeb, iot1 };

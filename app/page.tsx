@@ -16,7 +16,7 @@ import {
   aurduino,
   ubuntu,
   fastapi,
-} from "@/app/assets";
+} from "@/public/assets";
 import Image from "next/image";
 import { eduorga } from "@/lib/data";
 import { Hero } from "./hero";

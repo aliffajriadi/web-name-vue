@@ -17,13 +17,13 @@ import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Github } from "lucide-react";
 import { projects } from "@/lib/data";
 
-const categories = ["all", "web", "iot & computer vision", "backend"];
+const categories = ["All", "Web", "Internet of Things", "Backend", "AI", "Computer Vision"];
 
 const ProjectPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   const filteredProjects =
-    selectedCategory === "all"
+    selectedCategory === "All"
       ? projects
       : projects.filter((project) => project.category === selectedCategory);
 
@@ -33,7 +33,7 @@ const ProjectPage = () => {
 
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-semibold mb-4">my projects</h1>
+          <h1 className="text-4xl font-semibold mb-4">My Projects</h1>
           <p className="text-muted-foreground text-md max-w-2xl">
           a collection of my works including web apps, backend programs, and more.
           </p>

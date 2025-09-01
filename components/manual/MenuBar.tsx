@@ -1,7 +1,6 @@
 "use client";
 
 import { toast } from "sonner";
-import { igdata, lkdata, gitdata } from "@/lib/data";
 import {
   Drawer,
   DrawerClose,
@@ -27,7 +26,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { AlignRight, Mail, Instagram, Linkedin, Github } from "lucide-react";
+import { AlignRight, Mail} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import sendMessages from "@/lib/api/contact";
@@ -66,7 +65,12 @@ export const MenuBar = () => {
     }
   };
   const pathname: string = usePathname();
-
+  const date = new Date(); // misalnya: 2025-09-01
+  const formatedDate = date.toLocaleDateString("id-EN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
   return (
     <header className="w-full px-6 md:px-0 py-4 flex items-center justify-between">
       {/* Logo or Title */}
@@ -76,18 +80,27 @@ export const MenuBar = () => {
 
       {/* Menu link desktop */}
       <div className="space-x-4 hidden md:block">
-        <Link href="/" className={`hover:underline transition-all duration-200 ${pathname === '/' ? 'underline' : ''}`}>
+        <Link
+          href="/"
+          className={`hover:underline transition-all duration-200 ${
+            pathname === "/" ? "underline" : ""
+          }`}
+        >
           home
         </Link>
         <Link
           href="/project"
-          className={`hover:underline transition-all duration-200 ${pathname === '/project' ? 'underline' : ''}`}
+          className={`hover:underline transition-all duration-200 ${
+            pathname === "/project" ? "underline" : ""
+          }`}
         >
           projects
         </Link>
         <Link
           href="/contact"
-          className={`hover:underline transition-all duration-200 ${pathname === '/contact' ? 'underline' : ''}`}
+          className={`hover:underline transition-all duration-200 ${
+            pathname === "/contact" ? "underline" : ""
+          }`}
         >
           contact me
         </Link>
@@ -104,34 +117,33 @@ export const MenuBar = () => {
           <DrawerContent>
             <DrawerHeader>
               <div className="flex justify-between">
-                <DrawerTitle>let&apos;s connect</DrawerTitle>
+                <DrawerTitle>Portofolio {formatedDate}</DrawerTitle>
                 <DrawerTitle>
                   alif{" "}
                   <span className="bg-primary text-secondary px-1">f.</span>
                 </DrawerTitle>
               </div>
-              <div className="flex space-x-3 justify-around mt-3">
-                <Link href={gitdata}>
-                <Github size={40} />
-                </Link>
-                <Link href={igdata}>
-                <Instagram size={40} />
-                </Link>
-                <Link href={lkdata}>
-                <Linkedin size={40} />
-                </Link>
-                <Link onClick={() => toast.error("coming soon")} href="#">
-                <Mail size={40} />
-                </Link>
-              </div>
             </DrawerHeader>
             <div className="px-4 py-2 space-y-3">
-
-              <Button asChild className="w-full" variant={pathname === '/' ? 'default' : 'secondary'}><Link href="/">home</Link></Button>
-              <Button asChild className="w-full" variant={pathname === '/project' ? 'default' : 'secondary'}>
+              <Button
+                asChild
+                className="w-full cursor-pointer active:bg-black/50 active:scale-95 transition"
+                variant={pathname === "/" ? "default" : "secondary"}
+              >
+                <Link href="/">home</Link>
+              </Button>
+              <Button
+                asChild
+                className="w-full cursor-pointer active:bg-black/50 active:scale-95 transition"
+                variant={pathname === "/project" ? "default" : "secondary"}
+              >
                 <Link href="/project">projects</Link>
               </Button>
-              <Button asChild className="w-full" variant={pathname === '/contact' ? 'default' : 'secondary'}>
+              <Button
+                asChild
+                className="w-full cursor-pointer active:bg-black/50 active:scale-95 transition"
+                variant={pathname === "/contact" ? "default" : "secondary"}
+              >
                 <Link href="/contact">contact</Link>
               </Button>
             </div>
