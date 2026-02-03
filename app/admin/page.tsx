@@ -3,30 +3,55 @@
 import { useState, useEffect } from "react";
 import Dashboard from "./Dashboard";
 
+import { verifyAuth, setAuthToken } from "@/lib/api";
+
 export default function AdminPage() {
   const [key, setKey] = useState("");
   const [isAuth, setIsAuth] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedKey = localStorage.getItem("admin_api_key");
-    if (savedKey === "super-secret-key-123") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsAuth(true);
+    if (savedKey) {
+      setAuthToken(savedKey);
+      verifyAuth()
+        .then(() => {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setIsAuth(true);
+        })
+        .catch(() => {
+          localStorage.removeItem("admin_api_key");
+          setAuthToken(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (key === "super-secret-key-123") {
-      // In production this would be validated against server
+    setError("");
+
+    setAuthToken(key);
+    try {
+      await verifyAuth();
       localStorage.setItem("admin_api_key", key);
       setIsAuth(true);
-      setError("");
-    } else {
+    } catch {
       setError("Invalid Access Key");
+      setAuthToken(null);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center text-white">
+        Verifying credentials...
+      </div>
+    );
+  }
 
   if (isAuth) {
     return (
@@ -34,6 +59,7 @@ export default function AdminPage() {
         apiKey={localStorage.getItem("admin_api_key") || ""}
         onLogout={() => {
           localStorage.removeItem("admin_api_key");
+          setAuthToken(null);
           setIsAuth(false);
         }}
       />

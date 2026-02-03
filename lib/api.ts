@@ -16,6 +16,9 @@ export const setAuthToken = (token: string | null) => {
   }
 };
 
+// Verify API key
+export const verifyAuth = () => api.get("/auth/verify").then((res) => res.data);
+
 // Define types for better type safety
 export interface Profile {
   id?: string;
