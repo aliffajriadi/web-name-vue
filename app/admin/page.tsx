@@ -17,7 +17,6 @@ export default function AdminPage() {
       setAuthToken(savedKey);
       verifyAuth()
         .then(() => {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
           setIsAuth(true);
         })
         .catch(() => {
@@ -26,7 +25,7 @@ export default function AdminPage() {
         })
         .finally(() => setLoading(false));
     } else {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 0);
     }
   }, []);
 

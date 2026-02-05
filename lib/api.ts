@@ -78,7 +78,13 @@ export interface GalleryItem {
   caption_id?: string;
   location?: string;
   date?: string | Date;
+  likesCount?: number;
+  isLiked?: boolean;
 }
+
+// ... (keep intervening code)
+
+// ... (keep intervening code)
 
 export interface Skill {
   id?: string;
@@ -135,6 +141,8 @@ export const updateGalleryItem = (id: string, data: Partial<GalleryItem>) =>
   api.put(`/gallery/${id}`, data).then((res) => res.data);
 export const deleteGalleryItem = (id: string) =>
   api.delete(`/gallery/${id}`).then((res) => res.data);
+export const toggleGalleryLike = (id: string) =>
+  api.post(`/gallery/${id}/like`).then((res) => res.data);
 
 // --- Skills ---
 export const getSkills = () => api.get("/skills").then((res) => res.data);

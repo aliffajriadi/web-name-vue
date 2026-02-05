@@ -1,183 +1,368 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { getGallery, GalleryItem } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getGallery,
+  GalleryItem,
+  getProfile,
+  Profile,
+  toggleGalleryLike,
+} from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
-import { Loader2, MapPin, Calendar, Camera, Maximize2 } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Send,
+  Bookmark,
+  MoreHorizontal,
+  Grid,
+  Clapperboard,
+  UserSquare2,
+  Loader2,
+} from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export default function GalleryPage() {
   const { t } = useLanguage();
-  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null);
+  const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState<"posts" | "reels" | "tagged">(
+    "posts",
+  );
 
-  const { data: gallery, isLoading } = useQuery<GalleryItem[]>({
-    queryKey: ["gallery"],
-    queryFn: getGallery,
+  const { data: gallery, isLoading: isGalleryLoading } = useQuery<GalleryItem[]>(
+    {
+      queryKey: ["gallery"],
+      queryFn: getGallery,
+    },
+  );
+
+  const { data: profile } = useQuery<Profile>({
+    queryKey: ["profile"],
+    queryFn: getProfile,
   });
 
+  const { mutate: toggleLike } = useMutation({
+    mutationFn: toggleGalleryLike,
+    onMutate: async (id) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["gallery"] });
+
+      // Snapshot the previous value
+      const previousGallery = queryClient.getQueryData<GalleryItem[]>([
+        "gallery",
+      ]);
+
+      // Optimistically update to the new value
+      if (previousGallery) {
+        queryClient.setQueryData<GalleryItem[]>(
+          ["gallery"],
+          previousGallery.map((item) => {
+            if (item.id === id) {
+              const wasLiked = item.isLiked;
+              return {
+                ...item,
+                isLiked: !wasLiked,
+                likesCount: (item.likesCount || 0) + (wasLiked ? -1 : 1),
+              };
+            }
+            return item;
+          }),
+        );
+      }
+
+      return { previousGallery };
+    },
+    onError: (err, newTodo, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousGallery) {
+        queryClient.setQueryData(["gallery"], context.previousGallery);
+      }
+    },
+    onSettled: () => {
+      // Always refetch after error or success:
+      queryClient.invalidateQueries({ queryKey: ["gallery"] });
+    },
+  });
+
+  const postCount = gallery?.length || 0;
+
   return (
-    <div className="py-24 animate-in fade-in duration-700">
-      <div className="container-custom">
-        <header className="mb-16 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 mb-6 group">
-            <Camera
-              size={16}
-              className="text-primary group-hover:rotate-12 transition-transform"
-            />
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary italic">
-              Visual Archive
-            </span>
+    <div className="min-h-screen bg-background text-foreground pb-20 pt-5 animate-in fade-in duration-700">
+      <div className="container-custom max-w-4xl mx-auto pt-8 md:pt-12">
+        {/* Profile Header */}
+        <header className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12 mb-12 px-4">
+          <div className="relative group shrink-0">
+            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full p-[2px] bg-linear-to-tr from-yellow-400 via-red-500 to-purple-600">
+              <div className="w-full h-full rounded-full border-4 border-background overflow-hidden relative bg-muted">
+                <Image
+                  src={profile?.imageUrl || "/profile.png"}
+                  alt="Profile"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black text-foreground mb-4 tracking-tighter uppercase leading-none">
-            {t("Life Matrix", "Matriks Kehidupan")}
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
-            {t(
-              "A collection of moments, travels, and visual documentation from my journey through engineering and life.",
-              "Koleksi momen, perjalanan, dan dokumentasi visual dari perjalanan saya melalui teknik dan kehidupan.",
-            )}
-          </p>
+
+          <div className="flex-1 flex flex-col items-center md:items-start space-y-4 md:space-y-5">
+            <div className="flex flex-col md:flex-row items-center gap-4">
+              <h1 className="text-xl md:text-2xl font-semibold">
+                {profile?.name || "User"}
+              </h1>
+              <div className="flex gap-2">
+                <button className="px-4 py-1.5 bg-muted hover:bg-muted/80 font-semibold text-sm rounded-lg transition-colors">
+                  {t("Follow", "Ikuti")}
+                </button>
+                <button className="px-4 py-1.5 bg-muted hover:bg-muted/80 font-semibold text-sm rounded-lg transition-colors">
+                  {t("Message", "Pesan")}
+                </button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-8 md:gap-12 text-sm md:text-base">
+              <div className="flex flex-col md:flex-row items-center md:gap-1">
+                <span className="font-bold text-foreground">{postCount}</span>
+                <span className="text-muted-foreground">
+                  {t("posts", "postingan")}
+                </span>
+              </div>
+              <div className="flex flex-col md:flex-row items-center md:gap-1">
+                <span className="font-bold text-foreground">1.2M</span>
+                <span className="text-muted-foreground">
+                  {t("followers", "pengikut")}
+                </span>
+              </div>
+              <div className="flex flex-col md:flex-row items-center md:gap-1">
+                <span className="font-bold text-foreground">487</span>
+                <span className="text-muted-foreground">
+                  {t("following", "mengikuti")}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-center md:text-left text-sm">
+              <p className="font-bold text-base">
+                {t(profile?.role_en || "", profile?.role_id || "")}
+              </p>
+              <p className="text-muted-foreground whitespace-pre-line">
+                {t(
+                  profile?.bio_en || "Welcome to my gallery",
+                  profile?.bio_id || "Selamat datang di galeri saya",
+                )}
+              </p>
+              <a
+                href="#"
+                className="text-[#00376b] dark:text-[#e0f1ff] font-semibold hover:underline"
+              >
+                aliffajriadi.my.id
+              </a>
+            </div>
+          </div>
         </header>
 
-        {isLoading ? (
-          <div className="py-24 flex flex-col items-center gap-4">
-            <Loader2 className="animate-spin text-primary" size={48} />
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              Decoding Visual Data...
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-8">
-            {gallery?.length === 0 && (
-              <div className="col-span-full py-20 text-center border-2 border-dashed border-border rounded-[3rem]">
-                <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">
-                  No visual records captured yet.
-                </p>
-              </div>
-            )}
-            {gallery?.map((item: GalleryItem) => (
-              <div
-                key={item.id}
-                className="group relative aspect-square bg-muted rounded-4xl overflow-hidden border border-border cursor-pointer shadow-lg hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 active:scale-95"
-                onClick={() => setSelectedImage(item)}
-              >
-                <Image
-                  src={item.imageUrl}
-                  alt={
-                    t(item.caption_en || "", item.caption_id || "") ||
-                    "Gallery Image"
-                  }
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-6">
-                  <div className="flex items-center gap-2 text-white/90 text-[10px] font-black uppercase tracking-widest mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                    <Calendar size={12} className="text-primary" />{" "}
-                    {new Date(item.date || new Date()).toLocaleDateString(
-                      undefined,
-                      {
-                        month: "short",
-                        year: "numeric",
-                      },
-                    )}
-                  </div>
-                  <p className="text-white text-xs font-bold line-clamp-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-75">
-                    {t(item.caption_en || "", item.caption_id || "")}
-                  </p>
-                  {item.location && (
-                    <div className="flex items-center gap-1.5 text-white/70 text-[10px] font-medium mt-3 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500 delay-150">
-                      <MapPin size={10} className="text-primary" />{" "}
-                      {item.location}
-                    </div>
+        {/* Highlights (Mock) */}
+        <div className="flex gap-4 md:gap-8 overflow-x-auto pb-8 mb-4 px-4 scrollbar-hide">
+          {[
+            { id: 1, label: "Code", color: "bg-blue-100" },
+            { id: 2, label: "Travel", color: "bg-green-100" },
+            { id: 3, label: "Life", color: "bg-yellow-100" },
+            { id: 4, label: "Setup", color: "bg-purple-100" },
+          ].map((highlight) => (
+            <div
+              key={highlight.id}
+              className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group"
+            >
+              <div className="w-16 h-16 rounded-full p-[2px] border border-border bg-background group-hover:scale-105 transition-transform duration-300">
+                <div
+                  className={cn(
+                    "w-full h-full rounded-full flex items-center justify-center border-2 border-background",
+                    highlight.color,
                   )}
-                  <div className="absolute top-4 right-4 p-2 bg-white/20 backdrop-blur-md rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Maximize2 size={14} className="text-white" />
-                  </div>
+                >
+                  <span className="text-xs font-bold opacity-50 dark:text-black">
+                    ✦
+                  </span>
                 </div>
               </div>
+              <span className="text-xs font-medium">{highlight.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
+        <div className="border-t border-border mb-8">
+          <div className="flex justify-center gap-12">
+            <button
+              onClick={() => setActiveTab("posts")}
+              className={cn(
+                "flex items-center gap-2 py-4 border-t-2 transition-all uppercase text-xs font-bold tracking-widest",
+                activeTab === "posts"
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Grid size={12} />
+              <span className="hidden md:inline">Posts</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("reels")}
+              className={cn(
+                "flex items-center gap-2 py-4 border-t-2 transition-all uppercase text-xs font-bold tracking-widest",
+                activeTab === "reels"
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <Clapperboard size={12} />
+              <span className="hidden md:inline">Reels</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("tagged")}
+              className={cn(
+                "flex items-center gap-2 py-4 border-t-2 transition-all uppercase text-xs font-bold tracking-widest",
+                activeTab === "tagged"
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <UserSquare2 size={12} />
+              <span className="hidden md:inline">Tagged</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Content Feed */}
+        {isGalleryLoading ? (
+          <div className="py-24 flex flex-col items-center gap-4">
+            <Loader2 className="animate-spin text-primary" size={32} />
+          </div>
+        ) : (
+          <div className="max-w-[470px] mx-auto space-y-6 md:space-y-10">
+            {gallery?.length === 0 && (
+              <div className="text-center py-20">
+                <div className="w-16 h-16 border-2 border-foreground rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Grid size={32} />
+                </div>
+                <h3 className="font-bold text-lg mb-2">
+                  {t("No Posts Yet", "Belum Ada Postingan")}
+                </h3>
+              </div>
+            )}
+
+            {gallery?.map((item: GalleryItem) => (
+              <article
+                key={item.id}
+                className="bg-card border-b md:border border-border md:rounded-lg overflow-hidden pb-4"
+              >
+                {/* Post Header */}
+                <div className="flex items-center justify-between p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 relative rounded-full overflow-hidden border border-border">
+                      <Image
+                        src={profile?.imageUrl || "/profile.png"}
+                        fill
+                        className="object-cover"
+                        alt="Avatar"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-semibold hover:opacity-70 cursor-pointer">
+                          {profile?.name || "User"}
+                        </p>
+                        <span className="text-[10px] text-muted-foreground">
+                          •
+                        </span>
+                        <span className="text-xs text-blue-500 font-semibold cursor-pointer hover:text-blue-600 transition-colors">
+                          Follow
+                        </span>
+                      </div>
+                      {item.location && (
+                        <p className="text-xs text-muted-foreground">
+                          {item.location}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button className="text-foreground hover:opacity-60 transition-opacity">
+                    <MoreHorizontal size={20} />
+                  </button>
+                </div>
+
+                {/* Post Image */}
+                <div className="relative aspect-square bg-muted border-y border-border md:border-none">
+                  <Image
+                    src={item.imageUrl}
+                    alt="Post content"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* Actions */}
+                <div className="px-3 pt-3 pb-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4 text-foreground">
+                      <button
+                        onClick={() => item.id && toggleLike(item.id)}
+                        className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200"
+                      >
+                        <Heart
+                          size={24}
+                          className={cn(
+                            item.isLiked ? "fill-red-500 text-red-500" : "",
+                          )}
+                        />
+                      </button>
+                      <button className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200">
+                        <MessageCircle size={24} className="-rotate-90" />
+                      </button>
+                      <button className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200">
+                        <Send size={24} className="rotate-12" />
+                      </button>
+                    </div>
+                    <button className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200">
+                      <Bookmark size={24} />
+                    </button>
+                  </div>
+
+                  {/* Likes */}
+                  <div className="text-sm font-semibold mb-2">
+                    {item.likesCount || 0} {t("likes", "suka")}
+                  </div>
+
+                  {/* Caption */}
+                  <div className="text-sm space-y-1">
+                    <div>
+                      <span className="font-semibold mr-2">
+                        {profile?.name || "User"}
+                      </span>
+                      <span className="text-foreground/90">
+                        {t(item.caption_en || "", item.caption_id || "")}
+                      </span>
+                    </div>
+                    {/* View all comments - Mock */}
+                    <button className="text-muted-foreground text-sm mt-1">
+                      {t("View all comments", "Lihat semua komentar")}
+                    </button>
+                  </div>
+
+                  {/* Date */}
+                  <div className="mt-3 text-[10px] uppercase text-muted-foreground tracking-wide">
+                    {new Date(item.date || new Date()).toLocaleDateString(
+                      "en-US",
+                      { month: "long", day: "numeric" },
+                    )}
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         )}
       </div>
-
-      {/* Lightbox Modal */}
-      {selectedImage && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-background/95 backdrop-blur-3xl p-4 md:p-8 animate-in fade-in duration-300">
-          <button
-            onClick={() => setSelectedImage(null)}
-            className="absolute top-6 right-6 md:top-10 md:right-10 p-4 bg-muted hover:bg-primary hover:text-white rounded-3xl transition-all z-20"
-          >
-            <Maximize2 size={24} className="rotate-45" />
-          </button>
-
-          <div className="w-full max-w-6xl max-h-[90vh] flex flex-col lg:flex-row bg-card border border-border rounded-[3.5rem] overflow-hidden shadow-3xl animate-in zoom-in-95 duration-500">
-            <div className="relative aspect-square lg:aspect-auto lg:grow bg-black flex items-center justify-center">
-              <Image
-                src={selectedImage.imageUrl}
-                alt="Gallery Detail"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-            <div className="w-full lg:w-96 p-10 flex flex-col bg-card border-l border-border">
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xl font-black shadow-xl">
-                  A
-                </div>
-                <div>
-                  <h3 className="font-black text-foreground uppercase tracking-tight">
-                    ALIF
-                  </h3>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest italic">
-                    {t("Field Documentation", "Dokumentasi Lapangan")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grow space-y-6">
-                <p className="text-lg text-foreground font-medium italic leading-relaxed">
-                  &quot;
-                  {t(
-                    selectedImage.caption_en || "",
-                    selectedImage.caption_id || "",
-                  )}
-                  &quot;
-                </p>
-
-                <div className="space-y-4 pt-6 border-t border-border">
-                  <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                    <Calendar size={14} className="text-primary" />{" "}
-                    {new Date(
-                      selectedImage.date || new Date(),
-                    ).toLocaleDateString(undefined, {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}
-                  </div>
-                  {selectedImage.location && (
-                    <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                      <MapPin size={14} className="text-primary" />{" "}
-                      {selectedImage.location}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="pt-10">
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="w-full py-4 bg-muted hover:bg-border text-foreground font-black uppercase tracking-widest rounded-2xl transition-all text-xs"
-                >
-                  Close View
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

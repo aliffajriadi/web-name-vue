@@ -120,16 +120,39 @@ export default function BlogPage() {
                   <p className="text-muted-foreground leading-relaxed text-base font-medium line-clamp-2 md:line-clamp-3">
                     {t(post.excerpt_en, post.excerpt_id)}
                   </p>
-                  <Link
-                    href={`/blog/${post.slug}`}
-                    className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary group/link"
-                  >
-                    {t("Open File", "Buka File")}{" "}
-                    <ArrowRight
-                      size={16}
-                      className="transition-transform group-hover/link:translate-x-1"
-                    />
-                  </Link>
+                  <div className="flex items-center gap-6">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary group/link"
+                    >
+                      {t("Open File", "Buka File")}{" "}
+                      <ArrowRight
+                        size={16}
+                        className="transition-transform group-hover/link:translate-x-1"
+                      />
+                    </Link>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        const url = `${window.location.origin}/blog/${post.slug}`;
+                        if (navigator.share) {
+                          navigator
+                            .share({
+                              title: post.title_en || "Blog Post",
+                              text: post.excerpt_en || "",
+                              url: url,
+                            })
+                            .catch(console.error);
+                        } else {
+                          navigator.clipboard.writeText(url);
+                          alert("Link copied!");
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all"
+                    >
+                      Share
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
