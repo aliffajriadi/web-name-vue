@@ -29,12 +29,12 @@ export default function BlogPage() {
       <div className="container-custom">
         <header className="mb-16">
           <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight uppercase">
-            Journal
+            Articles
           </h1>
           <p className="text-xl text-muted-foreground mb-8 font-medium">
             {t(
-              "Ideas, technical deep-dives, and engineering thoughts.",
-              "Ide, pendalaman teknis, dan pemikiran teknik.",
+              "Ideas, technical deep dives, and engineering solutions.",
+              "Ide, pendalaman teknis, dan solusi rekayasa.",
             )}
           </p>
 
@@ -46,7 +46,7 @@ export default function BlogPage() {
               />
               <input
                 type="text"
-                placeholder={t("Search logs...", "Cari log...")}
+                placeholder={t("Search articles...", "Cari artikel...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full bg-card border border-border rounded-2xl px-12 py-4 text-foreground font-medium focus:outline-none focus:border-primary transition-all shadow-sm"
