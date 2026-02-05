@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.31.0",
     "html-react-parser": "^5.2.16",
+    "imagekitio-next": "^1.0.1",
     "lodash": "^4.17.23",
     "lodash.debounce": "^4.0.8",
     "lowlight": "^3.3.0",

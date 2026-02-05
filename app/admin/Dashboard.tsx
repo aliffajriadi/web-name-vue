@@ -52,6 +52,7 @@ import {
   Cpu,
 } from "lucide-react";
 import MediumEditor from "@/components/admin/MediumEditor";
+import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface DashboardProps {
   apiKey: string;
@@ -327,18 +328,14 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
                 required
               />
             </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Cover Image URL
-              </label>
-              <input
-                name="image"
-                value={formData.image || ""}
-                onChange={handleChange}
-                placeholder="https://..."
-                className="admin-input-premium"
-              />
-            </div>
+            <ImageUploadField
+              label="Cover Image"
+              name="image"
+              value={formData.image || ""}
+              onChange={(url) =>
+                setFormData((prev: any) => ({ ...prev, image: url }))
+              }
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -461,12 +458,13 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
               className="admin-input-premium"
               required
             />
-            <input
+            <ImageUploadField
+              label="Project Image"
               name="image"
               value={formData.image || ""}
-              onChange={handleChange}
-              placeholder="Image URL"
-              className="admin-input-premium"
+              onChange={(url) =>
+                setFormData((prev: any) => ({ ...prev, image: url }))
+              }
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -509,19 +507,14 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
     if (tab === "gallery") {
       return (
         <div className="space-y-6">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-              Visual Matrix Source (URL)
-            </label>
-            <input
-              name="imageUrl"
-              value={formData.imageUrl || ""}
-              onChange={handleChange}
-              placeholder="https://images.unsplash.com/..."
-              className="admin-input-premium"
-              required
-            />
-          </div>
+          <ImageUploadField
+            label="Visual Matrix Source"
+            name="imageUrl"
+            value={formData.imageUrl || ""}
+            onChange={(url) =>
+              setFormData((prev: any) => ({ ...prev, imageUrl: url }))
+            }
+          />
           <div className="grid grid-cols-2 gap-6">
             <input
               name="location"
@@ -788,12 +781,13 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
                   placeholder="Name"
                   required
                 />
-                <input
+                <ImageUploadField
+                  label="Profile Photo"
                   name="imageUrl"
                   value={formData.imageUrl || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Photo URL"
+                  onChange={(url) =>
+                    setFormData((prev: any) => ({ ...prev, imageUrl: url }))
+                  }
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
