@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import { ImageKitProvider, IKUpload } from "imagekitio-next";
 import { API_BASE_URL } from "@/lib/api";
 import { Upload, X, Loader2, CheckCircle2 } from "lucide-react";
+import Image from "next/image";
 
 const publicKey = "public_eCQf3j533fEHqgIkNhMjXChRUf4=";
 const urlEndpoint = "https://ik.imagekit.io/8zzj11dsp";
@@ -22,8 +23,10 @@ const authenticator = async () => {
     const data = await response.json();
     const { signature, expire, token } = data;
     return { signature, expire, token };
-  } catch (error: any) {
-    throw new Error(`Authentication request failed: ${error.message}`);
+  } catch (error) {
+    throw new Error(
+      `Authentication request failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 };
 
@@ -32,6 +35,12 @@ interface ImageUploadFieldProps {
   onChange: (url: string) => void;
   label: string;
   name: string;
+}
+
+interface IKUploadResponse {
+  url: string;
+  fileId: string;
+  // add other fields if necessary
 }
 
 export default function ImageUploadField({
@@ -43,13 +52,13 @@ export default function ImageUploadField({
   const ikUploadRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  const onError = (err: any) => {
+  const onError = (err: { message: string }) => {
     console.error("Error", err);
     setUploading(false);
     alert("Upload failed: " + err.message);
   };
 
-  const onSuccess = (res: any) => {
+  const onSuccess = (res: IKUploadResponse) => {
     console.log("Success", res);
     setUploading(false);
     onChange(res.url);
@@ -116,10 +125,11 @@ export default function ImageUploadField({
 
         {value && (
           <div className="mt-2 relative aspect-video w-full rounded-xl overflow-hidden border border-border bg-muted">
-            <img
+            <Image
               src={`${value}?tr=w-400,h-225,fo-auto`}
               alt="Preview"
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
               <span className="text-white text-[10px] font-bold uppercase tracking-widest">

@@ -97,7 +97,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
           <header className="mb-20">
             {/* Title First as requested */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-foreground mb-12 leading-none tracking-tighter uppercase whitespace-pre-line break-words">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-foreground mb-12 leading-none tracking-tighter uppercase whitespace-pre-line wrap-break-word">
               {title}
             </h1>
 
