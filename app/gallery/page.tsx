@@ -7,6 +7,9 @@ import {
   getProfile,
   Profile,
   toggleGalleryLike,
+  addGalleryComment,
+  getGalleryComments,
+  GalleryComment,
 } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -21,7 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
 export default function GalleryPage() {
@@ -31,12 +34,12 @@ export default function GalleryPage() {
     "posts",
   );
 
-  const { data: gallery, isLoading: isGalleryLoading } = useQuery<GalleryItem[]>(
-    {
-      queryKey: ["gallery"],
-      queryFn: getGallery,
-    },
-  );
+  const { data: gallery, isLoading: isGalleryLoading } = useQuery<
+    GalleryItem[]
+  >({
+    queryKey: ["gallery"],
+    queryFn: getGallery,
+  });
 
   const { data: profile } = useQuery<Profile>({
     queryKey: ["profile"],
@@ -317,7 +320,18 @@ export default function GalleryPage() {
                           )}
                         />
                       </button>
-                      <button className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200">
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent(`expand-comments-${item.id}`),
+                          );
+                          const element = document.getElementById(
+                            `comments-${item.id}`,
+                          );
+                          element?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200"
+                      >
                         <MessageCircle size={24} className="-rotate-90" />
                       </button>
                       <button className="hover:opacity-60 transition-opacity transform active:scale-90 duration-200">
@@ -344,10 +358,11 @@ export default function GalleryPage() {
                         {t(item.caption_en || "", item.caption_id || "")}
                       </span>
                     </div>
-                    {/* View all comments - Mock */}
-                    <button className="text-muted-foreground text-sm mt-1">
-                      {t("View all comments", "Lihat semua komentar")}
-                    </button>
+
+                    <CommentSection
+                      postId={item.id!}
+                      initialComments={item.comments}
+                    />
                   </div>
 
                   {/* Date */}
@@ -357,6 +372,20 @@ export default function GalleryPage() {
                       { month: "long", day: "numeric" },
                     )}
                   </div>
+
+                  {/* Comment Input */}
+                  {!item.hasCommented && (
+                    <div className="mt-4 pt-4 border-t border-border/50">
+                      <CommentInput
+                        postId={item.id!}
+                        onSuccess={() =>
+                          queryClient.invalidateQueries({
+                            queryKey: ["gallery"],
+                          })
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
               </article>
             ))}
@@ -364,5 +393,132 @@ export default function GalleryPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function CommentSection({
+  postId,
+  initialComments,
+}: {
+  postId: string;
+  initialComments?: GalleryComment[];
+}) {
+  const { t } = useLanguage();
+  const [showAll, setShowAll] = useState(false);
+  const {
+    data: comments,
+    isLoading,
+    refetch,
+  } = useQuery<GalleryComment[]>({
+    queryKey: ["gallery-comments", postId],
+    queryFn: () => getGalleryComments(postId),
+    enabled: false, // Only fetch when requested
+  });
+
+  const handleShowComments = useCallback(() => {
+    setShowAll(true);
+    refetch();
+  }, [refetch]);
+
+  useEffect(() => {
+    const handleExpand = () => handleShowComments();
+    window.addEventListener(`expand-comments-${postId}`, handleExpand);
+    return () =>
+      window.removeEventListener(`expand-comments-${postId}`, handleExpand);
+  }, [postId, handleShowComments]);
+
+  const displayComments = showAll ? comments : initialComments?.slice(0, 2);
+
+  return (
+    <div id={`comments-${postId}`} className="mt-2 space-y-2">
+      {displayComments?.map((comment) => (
+        <div key={comment.id} className="flex items-start gap-2 text-sm">
+          <div className="w-6 h-6 relative rounded-full overflow-hidden shrink-0 border border-border">
+            <Image
+              src={comment.user.avatar}
+              fill
+              className="object-cover"
+              alt={comment.user.name}
+            />
+          </div>
+          <div className="flex-1">
+            <span className="font-semibold mr-2">{comment.user.name}</span>
+            <span className="text-foreground/80">{comment.content}</span>
+          </div>
+        </div>
+      ))}
+
+      {((initialComments?.length || 0) > 2 || displayComments?.length === 0) &&
+        !showAll && (
+          <button
+            onClick={handleShowComments}
+            className="text-muted-foreground text-xs hover:underline"
+          >
+            {isLoading
+              ? t("Loading...", "Memuat...")
+              : t(
+                  `View all ${initialComments?.length || 0} comments`,
+                  `Lihat semua ${initialComments?.length || 0} komentar`,
+                )}
+          </button>
+        )}
+    </div>
+  );
+}
+
+function CommentInput({
+  postId,
+  onSuccess,
+}: {
+  postId: string;
+  onSuccess: () => void;
+}) {
+  const [content, setContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { t } = useLanguage();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!content.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await addGalleryComment(postId, content);
+      setContent("");
+      onSuccess();
+    } catch (error: unknown) {
+      const errorMsg =
+        (error as { response?: { data?: { error?: string } } })?.response?.data
+          ?.error || "Failed to add comment";
+      console.error(errorMsg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+      <input
+        type="text"
+        placeholder={t("Add a comment...", "Tambahkan komentar...")}
+        className="flex-1 bg-transparent text-sm outline-hidden focus:ring-0"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        disabled={isSubmitting}
+      />
+      <button
+        type="submit"
+        disabled={!content.trim() || isSubmitting}
+        className={cn(
+          "text-sm font-semibold text-blue-500 hover:text-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+        )}
+      >
+        {isSubmitting ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : (
+          t("Post", "Kirim")
+        )}
+      </button>
+    </form>
   );
 }

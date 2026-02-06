@@ -79,7 +79,22 @@ export interface GalleryItem {
   location?: string;
   date?: string | Date;
   likesCount?: number;
+  commentsCount?: number;
   isLiked?: boolean;
+  hasCommented?: boolean;
+  comments?: GalleryComment[];
+}
+
+export interface GalleryComment {
+  id: string;
+  galleryId: string;
+  content: string;
+  ipAddress: string;
+  createdAt: string;
+  user: {
+    name: string;
+    avatar: string;
+  };
 }
 
 // ... (keep intervening code)
@@ -143,6 +158,10 @@ export const deleteGalleryItem = (id: string) =>
   api.delete(`/gallery/${id}`).then((res) => res.data);
 export const toggleGalleryLike = (id: string) =>
   api.post(`/gallery/${id}/like`).then((res) => res.data);
+export const addGalleryComment = (id: string, content: string) =>
+  api.post(`/gallery/${id}/comments`, { content }).then((res) => res.data);
+export const getGalleryComments = (id: string) =>
+  api.get(`/gallery/${id}/comments`).then((res) => res.data);
 
 // --- Skills ---
 export const getSkills = () => api.get("/skills").then((res) => res.data);
