@@ -267,8 +267,9 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       <style jsx global>{`
         /* Typography System */
         .tiptap-content h2 {
+          font-family: var(--font-poppins), sans-serif;
           font-size: 3rem;
-          font-weight: 900;
+          font-weight: 800;
           line-height: 1.1;
           margin-top: 6rem;
           margin-bottom: 2rem;
@@ -277,8 +278,9 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           color: var(--foreground);
         }
         .tiptap-content h3 {
+          font-family: var(--font-poppins), sans-serif;
           font-size: 2rem;
-          font-weight: 900;
+          font-weight: 800;
           line-height: 1.1;
           margin-top: 4rem;
           margin-bottom: 1.5rem;
