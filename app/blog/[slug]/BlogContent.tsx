@@ -2,15 +2,49 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, Calendar, Tag, Clock, Share2, Check } from "lucide-react";
+import {
+  ChevronLeft,
+  Calendar,
+  Tag,
+  Clock,
+  Share2,
+  Check,
+  InstagramIcon,
+  LinkedinIcon,
+} from "lucide-react";
 import Image from "next/image";
 import { useLanguage } from "@/context/LanguageContext";
 import parse from "html-react-parser";
-import { Blog, API_BASE_URL } from "@/lib/api";
+import { Blog, API_BASE_URL, getProfile, getBlogs } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 
 export default function BlogContent({ blog }: { blog: Blog }) {
   const { t } = useLanguage();
   const [copied, setCopied] = useState(false);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
+
+  const { data: allBlogs } = useQuery<Blog[]>({
+    queryKey: ["blogs"],
+    queryFn: () => getBlogs(),
+  });
+
+  const relatedBlogs = allBlogs
+    ?.filter((b) => (b.id && blog.id ? b.id !== blog.id : b.slug !== blog.slug))
+    .sort((a, b) => {
+      // Prioritize same category
+      if (a.category === blog.category && b.category !== blog.category)
+        return -1;
+      if (a.category !== blog.category && b.category === blog.category)
+        return 1;
+      return 0;
+    })
+    .slice(0, 3);
+
+  console.log(profile);
 
   const content = t(blog.content_en, blog.content_id);
   const title = t(blog.title_en, blog.title_id);
@@ -97,7 +131,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
           <header className="mb-20">
             {/* Title First as requested */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black text-foreground mb-12 leading-none tracking-tighter uppercase whitespace-pre-line wrap-break-word">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-foreground mb-12 leading-none tracking-tighter uppercase whitespace-pre-line wrap-break-word">
               {title}
             </h1>
 
@@ -150,21 +184,84 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           </div>
 
           <div className="mt-40 pt-20 border-t border-border flex flex-col items-center text-center group">
-            <div className="relative w-32 h-32 mb-10">
-              <div className="absolute inset-0 bg-primary/20 rounded-[3rem] rotate-12 group-hover:rotate-0 transition-transform duration-500" />
-              <div className="absolute inset-0 bg-primary text-primary-foreground flex items-center justify-center text-4xl font-black rounded-[3rem] shadow-2xl">
-                A
+            {profile?.imageUrl && (
+              <div className="relative w-32 h-32 mb-10">
+                <Image
+                  src={profile.imageUrl}
+                  alt="Alif"
+                  fill
+                  className="object-cover rounded-full transition-transform duration-1000 group-hover:scale-105"
+                  priority
+                />
               </div>
-            </div>
+            )}
             <h4 className="text-2xl font-black text-foreground mb-4 uppercase tracking-tighter">
-              Manuscript by Alif
+              {t(
+                `Article by ${profile?.name}`,
+                `Artikel oleh ${profile?.name}`,
+              )}
             </h4>
             <p className="text-muted-foreground max-w-md font-medium text-lg leading-relaxed">
-              Full-stack Engineer dedicated to the craft of technical
-              storytelling through code and architecture.
+              {t(profile?.tagline_en, profile?.tagline_id)}
             </p>
+            <div className="flex gap-4 mt-4">
+              <Link href={profile?.instagram || "#"} target="_blank">
+                <InstagramIcon size={24} />
+              </Link>
+              <Link href={profile?.linkedin || "#"} target="_blank">
+                <LinkedinIcon size={24} />
+              </Link>
+            </div>
           </div>
         </div>
+
+        {relatedBlogs && relatedBlogs.length > 0 && (
+          <div className="container-custom mt-40 pt-20 border-t border-border/50">
+            <div className="flex items-center justify-between pt-10 mb-12">
+              <h3 className="text-3xl font-black text-foreground uppercase tracking-tighter">
+                {t("Continue Reading", "Artikel Terkait")}
+              </h3>
+              <Link
+                href="/blog"
+                className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all"
+              >
+                {t("View Archive", "Lihat Arsip")} →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {relatedBlogs.map((relatedPost) => (
+                <Link
+                  key={relatedPost.id || relatedPost.slug}
+                  href={`/blog/${relatedPost.slug}`}
+                  className="group"
+                >
+                  <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 border border-border bg-muted">
+                    {relatedPost.image && (
+                      <Image
+                        src={relatedPost.image}
+                        alt={t(relatedPost.title_en, relatedPost.title_id)}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">
+                      {relatedPost.category}
+                    </div>
+                    <h4 className="text-lg font-black text-foreground group-hover:text-primary transition-colors leading-tight uppercase tracking-tight line-clamp-2">
+                      {t(relatedPost.title_en, relatedPost.title_id)}
+                    </h4>
+                    <p className="text-xs text-muted-foreground line-clamp-2 font-medium">
+                      {t(relatedPost.excerpt_en, relatedPost.excerpt_id)}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </article>
 
       <style jsx global>{`
