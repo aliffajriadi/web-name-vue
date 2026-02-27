@@ -142,6 +142,7 @@ export default function GhostEditor({
                 className="object-cover"
               />
               <button
+                type="button"
                 onClick={() => onFeatureImageChange("")}
                 className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
               >
@@ -150,6 +151,7 @@ export default function GhostEditor({
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => ikFeatureRef.current?.click()}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors py-4"
             >
@@ -184,6 +186,7 @@ export default function GhostEditor({
           {/* Floating Menu Toggle */}
           <div className="absolute left-[-60px] top-1 z-10 hidden md:block">
             <button
+              type="button"
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className={`p-1.5 border border-border rounded-full hover:border-primary hover:text-primary transition-all ${isMenuOpen ? "rotate-45" : ""}`}
             >
@@ -202,6 +205,7 @@ export default function GhostEditor({
                     Primary blocks
                   </div>
                   <button
+                    type="button"
                     onClick={() => ikUploadRef.current?.click()}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors"
                   >
@@ -211,6 +215,7 @@ export default function GhostEditor({
                     <span>Image</span>
                   </button>
                   <button
+                    type="button"
                     onClick={addDivider}
                     className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors"
                   >
@@ -219,25 +224,37 @@ export default function GhostEditor({
                     </div>
                     <span>Divider</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed"
+                  >
                     <div className="p-1.5 bg-purple-500/10 text-purple-500 rounded">
                       <Layout size={16} />
                     </div>
                     <span>Gallery</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed"
+                  >
                     <div className="p-1.5 bg-green-500/10 text-green-500 rounded">
                       <ExternalLink size={16} />
                     </div>
                     <span>Button</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed"
+                  >
                     <div className="p-1.5 bg-orange-500/10 text-orange-500 rounded">
                       <X size={16} />
                     </div>
                     <span>Bookmark</span>
                   </button>
-                  <button className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed">
+                  <button
+                    type="button"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted rounded-lg text-sm transition-colors opacity-50 cursor-not-allowed"
+                  >
                     <div className="p-1.5 bg-red-500/10 text-red-500 rounded">
                       <Type size={16} />
                     </div>
@@ -267,18 +284,21 @@ export default function GhostEditor({
             className="flex items-center gap-0.5 bg-black text-white p-1 rounded-lg shadow-xl"
           >
             <button
+              type="button"
               onClick={() => editor.chain().focus().toggleBold().run()}
               className={`p-2 hover:bg-white/10 rounded ${editor.isActive("bold") ? "text-primary" : ""}`}
             >
               <Bold size={16} />
             </button>
             <button
+              type="button"
               onClick={() => editor.chain().focus().toggleItalic().run()}
               className={`p-2 hover:bg-white/10 rounded ${editor.isActive("italic") ? "text-primary" : ""}`}
             >
               <Italic size={16} />
             </button>
             <button
+              type="button"
               onClick={() => editor.chain().focus().toggleUnderline().run()}
               className={`p-2 hover:bg-white/10 rounded ${editor.isActive("underline") ? "text-primary" : ""}`}
             >
@@ -286,6 +306,7 @@ export default function GhostEditor({
             </button>
             <div className="w-px h-4 bg-white/20 mx-1" />
             <button
+              type="button"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 2 }).run()
               }
@@ -294,6 +315,7 @@ export default function GhostEditor({
               <Heading1 size={16} />
             </button>
             <button
+              type="button"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 3 }).run()
               }
@@ -302,6 +324,7 @@ export default function GhostEditor({
               <Heading2 size={16} />
             </button>
             <button
+              type="button"
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
               className={`p-2 hover:bg-white/10 rounded ${editor.isActive("blockquote") ? "text-primary" : ""}`}
             >

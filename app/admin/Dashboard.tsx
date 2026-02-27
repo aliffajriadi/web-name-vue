@@ -108,6 +108,12 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
       queryClient.invalidateQueries({ queryKey: [key] });
       closeModal();
     },
+    onError: (error: any) => {
+      console.error(error);
+      alert(
+        `Error: ${error.response?.data?.error || error.message || "Failed to process request"}`,
+      );
+    },
   });
 
   const blogMutations = {
@@ -202,7 +208,21 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
 
   const openAdd = () => {
     setEditingId(null);
-    setFormData({});
+    setFormData(
+      tab === "blogs"
+        ? {
+            title_en: "",
+            title_id: "",
+            slug: "",
+            category: "",
+            excerpt_en: "",
+            excerpt_id: "",
+            content_en: "",
+            content_id: "",
+            image: "",
+          }
+        : {},
+    );
     setModalOpen(true);
   };
 
@@ -215,6 +235,24 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (tab === "blogs") {
+      const required = [
+        "title_en",
+        "title_id",
+        "slug",
+        "category",
+        "excerpt_en",
+        "excerpt_id",
+        "content_en",
+        "content_id",
+      ];
+      const missing = required.filter((field) => !formData[field]);
+      if (missing.length > 0) {
+        alert(
+          `Please fill in all required fields. Missing: ${missing.map((m) => m.replace("_", " ")).join(", ")}`,
+        );
+        return;
+      }
+
       if (editingId) {
         blogMutations.update.mutate(formData);
       } else {
@@ -702,6 +740,18 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
     galleryQuery.isLoading ||
     skillsQuery.isLoading;
 
+  const isMutating =
+    blogMutations.create.isPending ||
+    blogMutations.update.isPending ||
+    projectMutations.create.isPending ||
+    projectMutations.update.isPending ||
+    experienceMutations.create.isPending ||
+    experienceMutations.update.isPending ||
+    galleryMutations.create.isPending ||
+    galleryMutations.update.isPending ||
+    skillMutations.create.isPending ||
+    skillMutations.update.isPending;
+
   return (
     <div className="py-12 pb-40 lg:pb-20">
       <div className="container-custom max-w-7xl!">
@@ -962,10 +1012,19 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
               <div className="pt-10 border-t border-border flex gap-4">
                 <button
                   type="submit"
-                  disabled={isWorking}
-                  className="grow bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] py-6 rounded-4xl flex items-center justify-center gap-4 hover:brightness-110 shadow-3xl shadow-primary/30 transition-all"
+                  disabled={isMutating}
+                  className="grow bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] py-6 rounded-4xl flex items-center justify-center gap-4 hover:brightness-110 shadow-3xl shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  <Save size={24} /> Deploy Record
+                  {isMutating ? (
+                    <Loader2 className="animate-spin" size={24} />
+                  ) : (
+                    <Save size={24} />
+                  )}
+                  {isMutating
+                    ? "Deploying..."
+                    : editingId
+                      ? "Update Record"
+                      : "Deploy Record"}
                 </button>
                 <button
                   type="button"
