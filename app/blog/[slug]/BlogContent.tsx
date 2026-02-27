@@ -398,6 +398,13 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           opacity: 0.8;
         }
 
+        .tiptap-content hr {
+          border: none;
+          border-top: 1px solid var(--border);
+          margin: 4rem auto;
+          width: 50%;
+        }
+
         @media (max-width: 768px) {
           .tiptap-content h2 {
             font-size: 2rem;

@@ -51,7 +51,7 @@ import {
   CheckCircle2,
   Cpu,
 } from "lucide-react";
-import MediumEditor from "@/components/admin/MediumEditor";
+import GhostEditor from "@/components/admin/GhostEditor";
 import ImageUploadField from "@/components/admin/ImageUploadField";
 
 interface DashboardProps {
@@ -271,145 +271,130 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
   const renderForm = () => {
     if (tab === "blogs") {
       return (
-        <div className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Title (EN)
-              </label>
-              <input
-                name="title_en"
-                value={formData.title_en || ""}
-                onChange={handleChange}
-                placeholder="Article Title"
-                className="admin-input-premium"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Judul (ID)
-              </label>
-              <input
-                name="title_id"
-                value={formData.title_id || ""}
-                onChange={handleChange}
-                placeholder="Judul Indonesia"
-                className="admin-input-premium"
-                required
-              />
+        <div className="space-y-12">
+          {/* Metadata Section */}
+          <div className="bg-muted/30 p-8 rounded-4xl border border-border">
+            <div className="flex flex-col md:flex-row gap-8">
+              <div className="flex-1 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Final URL Slug
+                    </label>
+                    <input
+                      name="slug"
+                      value={formData.slug || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. advent-of-iot"
+                      className="admin-input-premium"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Category Taxonomy
+                    </label>
+                    <input
+                      name="category"
+                      value={formData.category || ""}
+                      onChange={handleChange}
+                      placeholder="e.g. Engineering"
+                      className="admin-input-premium"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Short Digest (EN)
+                    </label>
+                    <textarea
+                      name="excerpt_en"
+                      value={formData.excerpt_en || ""}
+                      onChange={handleChange}
+                      className="admin-input-premium h-24"
+                      placeholder="Catchy summary for the feed..."
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Ringkasan Singkat (ID)
+                    </label>
+                    <textarea
+                      name="excerpt_id"
+                      value={formData.excerpt_id || ""}
+                      onChange={handleChange}
+                      className="admin-input-premium h-24"
+                      placeholder="Ringkasan menarik untuk feed..."
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Slug
-              </label>
-              <input
-                name="slug"
-                value={formData.slug || ""}
-                onChange={handleChange}
-                placeholder="e.g. advent-of-iot"
-                className="admin-input-premium"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Category
-              </label>
-              <input
-                name="category"
-                value={formData.category || ""}
-                onChange={handleChange}
-                placeholder="e.g. Engineering"
-                className="admin-input-premium"
-                required
-              />
-            </div>
-            <ImageUploadField
-              label="Cover Image"
-              name="image"
-              value={formData.image || ""}
-              onChange={(url) =>
-                setFormData((prev: any) => ({ ...prev, image: url }))
-              }
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Excerpt (EN)
-              </label>
-              <textarea
-                name="excerpt_en"
-                value={formData.excerpt_en || ""}
-                onChange={handleChange}
-                className="admin-input-premium h-24"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Excerpt (ID)
-              </label>
-              <textarea
-                name="excerpt_id"
-                value={formData.excerpt_id || ""}
-                onChange={handleChange}
-                className="admin-input-premium h-24"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="flex border-b border-border gap-4">
+          {/* Language Switcher */}
+          <div className="flex border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-20">
             <button
               type="button"
               onClick={() => setBlogLang("en")}
-              className={`px-6 py-3 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${blogLang === "en" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+              className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-3 ${blogLang === "en" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             >
               <Globe size={14} /> English Manuscript
             </button>
             <button
               type="button"
               onClick={() => setBlogLang("id")}
-              className={`px-6 py-3 text-xs font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-2 ${blogLang === "id" ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+              className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-3 ${blogLang === "id" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             >
               <LanguagesIcon size={14} /> Naskah Indonesia
             </button>
-            <div className="ml-auto self-center">
+            <div className="ml-auto pr-8 self-center">
               {saveStatus === "saving" && (
                 <span className="flex items-center gap-2 text-[10px] font-bold text-primary animate-pulse">
-                  <RefreshCw size={12} className="animate-spin" />{" "}
-                  Auto-saving...
+                  <RefreshCw size={12} className="animate-spin" /> Syncing...
                 </span>
               )}
               {saveStatus === "saved" && (
                 <span className="flex items-center gap-2 text-[10px] font-bold text-green-500">
-                  <CheckCircle2 size={12} /> Progress Secure
+                  <CheckCircle2 size={12} /> Persisted
                 </span>
               )}
             </div>
           </div>
 
-          <div className="min-h-[500px]">
-            <MediumEditor
+          {/* Ghost Style Editor */}
+          <div className="bg-background min-h-screen rounded-[3rem] border border-border overflow-hidden">
+            <GhostEditor
               key={`${editingId}-${blogLang}`}
+              title={
+                blogLang === "en"
+                  ? formData.title_en || ""
+                  : formData.title_id || ""
+              }
+              onTitleChange={(val) => {
+                const field = blogLang === "en" ? "title_en" : "title_id";
+                setFormData((prev: any) => ({ ...prev, [field]: val }));
+              }}
               content={
                 blogLang === "en"
                   ? formData.content_en || ""
                   : formData.content_id || ""
               }
-              onChange={(html) => {
+              onContentChange={(html) => {
                 const field = blogLang === "en" ? "content_en" : "content_id";
                 setFormData((prev: any) => ({ ...prev, [field]: html }));
                 setSaveStatus("saved");
                 setTimeout(() => setSaveStatus("idle"), 2000);
               }}
-              onAutoSaveStatus={setSaveStatus}
+              featureImage={formData.image || ""}
+              onFeatureImageChange={(url) =>
+                setFormData((prev: any) => ({ ...prev, image: url }))
+              }
               placeholder={
                 blogLang === "en"
                   ? "Tell your story in English..."
@@ -971,7 +956,7 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
             </div>
             <form
               onSubmit={handleSubmit}
-              className="p-10 overflow-y-auto space-y-10 custom-scrollbar grow"
+              className={`overflow-y-auto custom-scrollbar grow ${tab === "blogs" ? "p-0" : "p-10 space-y-10"}`}
             >
               {renderForm()}
               <div className="pt-10 border-t border-border flex gap-4">
