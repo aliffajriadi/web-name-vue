@@ -294,7 +294,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           font-size: 1.1rem;
           line-height: 1.8;
           margin-bottom: 2rem;
-          color: var(--muted-foreground);
+          color: var(--foreground);
           font-weight: 400;
         }
 
@@ -304,7 +304,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           font-family: var(--font-lora), serif;
           margin: 2rem 0;
           padding-left: 2rem;
-          color: var(--muted-foreground);
+          color: var(--foreground);
           font-size: 1.1rem;
           line-height: 1.8;
         }
