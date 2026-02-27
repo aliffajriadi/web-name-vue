@@ -5,10 +5,14 @@ import { usePathname } from "next/navigation";
 import { Home, Briefcase, FileText, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { motion } from "framer-motion";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
+  const scrollDirection = useScrollDirection();
+  const isVisible = scrollDirection !== "down";
 
   const navItems = [
     { name: t("Home", "Beranda"), path: "/", icon: Home },
@@ -18,7 +22,14 @@ export default function MobileNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/80 backdrop-blur-xl border-t border-border px-8 py-4 pb-8 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+    <motion.div
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : "100%" }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className={cn(
+        "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/80 backdrop-blur-xl border-t border-border px-8 py-4 pb-8 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.1)]",
+      )}
+    >
       {navItems.map((item) => {
         const isActive = pathname === item.path;
         return (
@@ -39,6 +50,6 @@ export default function MobileNav() {
           </Link>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

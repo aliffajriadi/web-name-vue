@@ -6,10 +6,14 @@ import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import { useLanguage } from "@/context/LanguageContext";
 import { Languages } from "lucide-react";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { motion } from "framer-motion";
 
 export default function Navbar() {
   const pathname = usePathname();
   const { lang, setLang, t } = useLanguage();
+  const scrollDirection = useScrollDirection();
+  const isVisible = scrollDirection !== "down";
 
   const navItems = [
     { name: t("Home", "Beranda"), path: "/" },
@@ -19,7 +23,14 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
+    <motion.nav
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : "-100%" }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className={cn(
+        "sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md",
+      )}
+    >
       <div className="container-custom h-16 flex items-center justify-between">
         <Link
           href="/"
@@ -58,6 +69,6 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }
