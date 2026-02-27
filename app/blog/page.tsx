@@ -25,10 +25,10 @@ export default function BlogPage() {
   });
 
   return (
-    <div className="py-24">
+    <div className="py-24 font-serif">
       <div className="container-custom">
         <header className="mb-16">
-          <h1 className="text-4xl md:text-5xl font-black text-foreground mb-4 tracking-tight uppercase">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-foreground mb-4 tracking-tight">
             Articles
           </h1>
           <p className="text-xl text-muted-foreground mb-8 font-medium">
@@ -113,7 +113,7 @@ export default function BlogPage() {
                     </span>
                   </div>
                   <Link href={`/blog/${post.slug}`}>
-                    <h2 className="text-2xl md:text-3xl font-black text-foreground group-hover:text-primary transition-colors leading-tight uppercase tracking-tight">
+                    <h2 className="text-2xl md:text-3xl font-extrabold text-foreground group-hover:text-primary transition-colors leading-tight tracking-tight font-serif">
                       {t(post.title_en, post.title_id)}
                     </h2>
                   </Link>

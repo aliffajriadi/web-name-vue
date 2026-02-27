@@ -21,7 +21,7 @@ export default function Hero() {
       <div className="container-custom">
         <div className="flex flex-col md:flex-row items-center gap-12">
           <div className="flex flex-col gap-6 max-w-2xl text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight leading-[1.1]">
+            <h1 className="text-4xl md:text-6xl font-extrabold text-foreground tracking-tight leading-[1.1]">
               {t(profile?.tagline_en, profile?.tagline_id) ||
                 "Building digital experiences that matter."}
             </h1>

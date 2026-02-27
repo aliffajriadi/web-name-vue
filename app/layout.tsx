@@ -90,19 +90,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${jakarta.variable} ${lora.variable} antialiased selection:bg-primary/30 selection:text-primary`}
+        className={`${jakarta.variable} ${lora.variable} font-sans antialiased selection:bg-primary/30 selection:text-primary`}
       >
         <NextTopLoader color="#2563eb" showSpinner={false} />
         <Providers>
           <div className="flex flex-col min-h-screen">
-            <div className="font-sans">
-              <Navbar />
-            </div>
+            <Navbar />
             <main className="grow">{children}</main>
-            <div className="font-sans">
-              <MobileNav />
-              <Footer />
-            </div>
+            <MobileNav />
+            <Footer />
           </div>
         </Providers>
       </body>

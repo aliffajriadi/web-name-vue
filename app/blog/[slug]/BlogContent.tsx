@@ -94,7 +94,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <article className="py-24 animate-in fade-in duration-700 selection:bg-primary selection:text-primary-foreground min-h-screen">
+      <article className="py-24 animate-in fade-in duration-700 selection:bg-primary selection:text-primary-foreground min-h-screen font-serif">
         <div className="container-custom max-w-4xl">
           <div className="flex justify-between items-center mb-16">
             <Link
@@ -131,7 +131,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
           <header className="mb-20">
             {/* Title First as requested */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-foreground mb-12 leading-none tracking-tighter uppercase whitespace-pre-line wrap-break-word">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-12 leading-tight tracking-tighter whitespace-pre-line wrap-break-word">
               {title}
             </h1>
 
@@ -195,7 +195,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
                 />
               </div>
             )}
-            <h4 className="text-2xl font-black text-foreground mb-4 uppercase tracking-tighter">
+            <h4 className="text-2xl font-extrabold text-foreground mb-4 tracking-tighter">
               {t(
                 `Article by ${profile?.name}`,
                 `Artikel oleh ${profile?.name}`,
@@ -218,7 +218,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
         {relatedBlogs && relatedBlogs.length > 0 && (
           <div className="container-custom mt-40 pt-20 border-t border-border/50">
             <div className="flex items-center justify-between pt-10 mb-12">
-              <h3 className="text-3xl font-black text-foreground uppercase tracking-tighter">
+              <h3 className="text-3xl font-extrabold text-foreground tracking-tighter">
                 {t("Continue Reading", "Artikel Terkait")}
               </h3>
               <Link
@@ -266,31 +266,32 @@ export default function BlogContent({ blog }: { blog: Blog }) {
 
       <style jsx global>{`
         /* Typography System */
+        .tiptap-content h2,
+        .tiptap-content h3,
+        article h1 {
+          font-family: var(--font-lora), serif;
+        }
         .tiptap-content h2 {
-          font-family: var(--font-jakarta), sans-serif;
-          font-size: 3rem;
+          font-size: 2rem;
           font-weight: 800;
-          line-height: 1.1;
+          line-height: 1.2;
           margin-top: 6rem;
           margin-bottom: 2rem;
-          text-transform: uppercase;
           letter-spacing: -0.05em;
           color: var(--foreground);
         }
         .tiptap-content h3 {
-          font-family: var(--font-jakarta), sans-serif;
-          font-size: 2rem;
+          font-size: 1.5rem;
           font-weight: 800;
           line-height: 1.1;
           margin-top: 4rem;
           margin-bottom: 1.5rem;
-          text-transform: uppercase;
           letter-spacing: -0.03em;
           color: var(--foreground);
         }
         .tiptap-content p {
           font-family: var(--font-lora), serif;
-          font-size: 1.25rem;
+          font-size: 1.1rem;
           line-height: 1.8;
           margin-bottom: 2rem;
           color: var(--muted-foreground);
@@ -304,7 +305,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           margin: 2rem 0;
           padding-left: 2rem;
           color: var(--muted-foreground);
-          font-size: 1.25rem;
+          font-size: 1.1rem;
           line-height: 1.8;
         }
         .tiptap-content ul {
@@ -330,7 +331,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
         }
         .tiptap-content th,
         .tiptap-content td {
-          padding: 1.25rem;
+          padding: 1rem;
           border-bottom: 1px solid var(--border);
           text-align: left;
         }
@@ -357,7 +358,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           background: var(--muted);
           border-radius: 0 2rem 2rem 0;
           margin: 3rem 0;
-          font-size: 2rem;
+          font-size: 1.2rem;
           font-weight: 900;
           line-height: 1.2;
           color: var(--foreground);
