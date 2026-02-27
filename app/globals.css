@@ -38,13 +38,15 @@
   --color-accent: var(--accent);
   --color-border: var(--border);
 
-  --font-sans: var(--font-poppins);
+  --font-sans: var(--font-jakarta);
+  --font-serif: var(--font-lora);
+  --font-heading: var(--font-jakarta);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-poppins), "Poppins", sans-serif !important;
+  font-family: var(--font-lora), "Lora", serif !important;
   line-height: 1.6;
   transition:
     background-color 0.3s,
@@ -58,9 +60,9 @@ h4,
 h5,
 h6 {
   color: var(--foreground);
-  font-family: var(--font-poppins), "Poppins", sans-serif !important;
+  font-family: var(--font-jakarta), "Plus Jakarta Sans", sans-serif !important;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .dark h1,
@@ -109,6 +111,7 @@ a:hover {
 /* Typography refinements for Blog */
 .prose {
   color: var(--foreground);
+  font-family: var(--font-lora), serif;
   font-size: 1.125rem;
   line-height: 1.8;
 }

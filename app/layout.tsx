@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Plus_Jakarta_Sans, Lora } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
@@ -7,10 +7,15 @@ import MobileNav from "@/components/MobileNav";
 import Footer from "@/components/Footer";
 import NextTopLoader from "nextjs-toploader";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const viewport: Viewport = {
@@ -24,7 +29,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://192.168.1.8:3000"), // Replace with your production URL later
+  metadataBase: new URL("https://aliffajriadi.my.id"), // Replace with your production URL later
   title: {
     default: "Alif Fajriadi",
     template: "%s | Alif",
@@ -85,15 +90,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${poppins.variable} font-sans antialiased selection:bg-primary/30 selection:text-primary`}
+        className={`${jakarta.variable} ${lora.variable} antialiased selection:bg-primary/30 selection:text-primary`}
       >
         <NextTopLoader color="#2563eb" showSpinner={false} />
         <Providers>
           <div className="flex flex-col min-h-screen">
-            <Navbar />
+            <div className="font-sans">
+              <Navbar />
+            </div>
             <main className="grow">{children}</main>
-            <MobileNav />
-            <Footer />
+            <div className="font-sans">
+              <MobileNav />
+              <Footer />
+            </div>
           </div>
         </Providers>
       </body>

@@ -135,7 +135,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
               {title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-8 text-[10px] font-black text-muted-foreground uppercase tracking-[0.25em] mb-12">
+            <div className="flex flex-wrap items-center gap-8 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.25em] mb-12 font-sans">
               <span className="flex items-center gap-2.5 text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 shadow-lg shadow-primary/5">
                 <Tag size={12} strokeWidth={3} /> {blog.category}
               </span>
@@ -157,10 +157,10 @@ export default function BlogContent({ blog }: { blog: Blog }) {
             </div>
 
             <div className="relative p-10 bg-muted/30 rounded-5xl border border-border mb-20 group hover:border-primary/30 transition-all duration-500">
-              <div className="absolute top-0 left-10 -translate-y-1/2 bg-primary text-primary-foreground text-[8px] font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-xl">
+              <div className="absolute top-0 left-10 -translate-y-1/2 bg-primary text-primary-foreground text-[8px] font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-xl font-sans">
                 Abstract
               </div>
-              <p className="text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed italic">
+              <p className="text-sm md:text-base text-muted-foreground font-medium leading-relaxed italic">
                 &quot;{excerpt}&quot;
               </p>
             </div>
@@ -267,7 +267,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
       <style jsx global>{`
         /* Typography System */
         .tiptap-content h2 {
-          font-family: var(--font-poppins), sans-serif;
+          font-family: var(--font-jakarta), sans-serif;
           font-size: 3rem;
           font-weight: 800;
           line-height: 1.1;
@@ -278,7 +278,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           color: var(--foreground);
         }
         .tiptap-content h3 {
-          font-family: var(--font-poppins), sans-serif;
+          font-family: var(--font-jakarta), sans-serif;
           font-size: 2rem;
           font-weight: 800;
           line-height: 1.1;
@@ -289,6 +289,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
           color: var(--foreground);
         }
         .tiptap-content p {
+          font-family: var(--font-lora), serif;
           font-size: 1.25rem;
           line-height: 1.8;
           margin-bottom: 2rem;
@@ -299,6 +300,7 @@ export default function BlogContent({ blog }: { blog: Blog }) {
         /* Lists */
         .tiptap-content ul,
         .tiptap-content ol {
+          font-family: var(--font-lora), serif;
           margin: 2rem 0;
           padding-left: 2rem;
           color: var(--muted-foreground);
