@@ -346,6 +346,25 @@ export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
+                      Publication Date
+                    </label>
+                    <input
+                      name="date"
+                      type="datetime-local"
+                      value={
+                        formData.date
+                          ? new Date(formData.date).toISOString().slice(0, 16)
+                          : ""
+                      }
+                      onChange={handleChange}
+                      className="admin-input-premium"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
                       Short Digest (EN)
                     </label>
                     <textarea
