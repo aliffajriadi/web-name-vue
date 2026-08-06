@@ -68,15 +68,11 @@ export default function Experience() {
             <div key={exp.id} className="relative grid md:grid-cols-[120px_1fr] gap-4 md:gap-10">
               {/* Timeline dot */}
               <div
-                className="absolute -left-[1.4rem] top-5 w-3 h-3 rounded-full ring-4"
+                className="absolute -left-[23px] top-[18px] w-[11px] h-[11px] rounded-full"
                 style={{
                   background: "var(--color-primary)",
-                  ringColor: "var(--bg-base)",
+                  boxShadow: "0 0 0 3px var(--bg-base), 0 0 0 4px var(--border-outline)",
                 }}
-              />
-              <div
-                className="absolute -left-[23px] top-[18px] w-[11px] h-[11px] rounded-full ring-[3px] ring-[var(--bg-base)]"
-                style={{ background: "var(--color-primary)" }}
               />
 
               {/* Year */}
