@@ -26,9 +26,11 @@ export default function MobileNav() {
       initial={{ y: 0 }}
       animate={{ y: isVisible ? 0 : "100%" }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className={cn(
-        "fixed bottom-0 left-0 right-0 z-50 md:hidden bg-background/80 backdrop-blur-xl border-t border-border px-8 py-4 pb-8 flex justify-between items-center shadow-[0_-10px_30px_rgba(0,0,0,0.1)]",
-      )}
+      className={cn("fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-xl px-8 py-4 pb-8 flex justify-between items-center")}
+      style={{
+        background: "rgba(242, 248, 241, 0.92)",
+        borderTop: "1px solid var(--border-outline)",
+      }}
     >
       {navItems.map((item) => {
         const isActive = pathname === item.path;
@@ -38,13 +40,16 @@ export default function MobileNav() {
             href={item.path}
             className={cn(
               "flex flex-col items-center gap-1.5 transition-all duration-300",
-              isActive
-                ? "text-primary scale-110"
-                : "text-muted-foreground hover:text-foreground",
             )}
+            style={{
+              color: isActive ? "var(--color-primary)" : "var(--color-text-body)",
+              transform: isActive ? "scale(1.1)" : "scale(1)",
+            }}
           >
-            <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-            <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+            <item.icon size={22} strokeWidth={isActive ? 2 : 1.5} />
+            <span
+              className="text-[10px] font-medium uppercase tracking-[0.15em]"
+            >
               {item.name}
             </span>
           </Link>

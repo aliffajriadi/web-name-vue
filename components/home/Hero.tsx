@@ -4,9 +4,136 @@ import { useQuery } from "@tanstack/react-query";
 import { getProfile } from "@/lib/api";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
-import { ArrowRight } from "lucide-react";
-import Image from "next/image";
 
+/* ── Decorative SVG background layer ─────────────────────────── */
+function HeroDecoratives() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ zIndex: 0 }}
+    >
+      {/* Large outlined circle — top-left, partially off-canvas */}
+      <svg
+        className="absolute -top-24 -left-32 animate-pulse-soft"
+        width="480"
+        height="480"
+        viewBox="0 0 480 480"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="240"
+          cy="240"
+          r="238"
+          stroke="var(--color-primary)"
+          strokeOpacity="0.12"
+          strokeWidth="1"
+        />
+        <circle
+          cx="240"
+          cy="240"
+          r="180"
+          stroke="var(--color-primary)"
+          strokeOpacity="0.06"
+          strokeWidth="1"
+        />
+      </svg>
+
+      {/* Organic curved line — diagonal through hero */}
+      <svg
+        className="absolute top-0 left-0 w-full h-full"
+        viewBox="0 0 900 600"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M -20 420 C 150 300, 350 480, 580 200 C 720 60, 820 180, 950 120"
+          stroke="var(--decorative-line)"
+          strokeWidth="1.2"
+          fill="none"
+        />
+        <path
+          d="M 100 600 C 250 440, 420 560, 620 340 C 760 200, 860 320, 1000 240"
+          stroke="var(--decorative-line)"
+          strokeWidth="0.8"
+          fill="none"
+        />
+      </svg>
+
+      {/* Small outlined circle + dot — bottom-right accent */}
+      <svg
+        className="absolute bottom-16 right-12 animate-float-slow"
+        width="80"
+        height="80"
+        viewBox="0 0 80 80"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle
+          cx="40"
+          cy="40"
+          r="38"
+          stroke="var(--color-primary)"
+          strokeOpacity="0.2"
+          strokeWidth="1"
+        />
+        <circle
+          cx="12"
+          cy="12"
+          r="3"
+          fill="var(--color-primary)"
+          fillOpacity="0.35"
+        />
+      </svg>
+
+      {/* Extra small circles — mid area */}
+      <svg
+        className="absolute top-1/3 right-[8%]"
+        width="40"
+        height="40"
+        viewBox="0 0 40 40"
+        fill="none"
+      >
+        <circle
+          cx="20"
+          cy="20"
+          r="18"
+          stroke="var(--color-primary)"
+          strokeOpacity="0.15"
+          strokeWidth="1"
+        />
+      </svg>
+    </div>
+  );
+}
+
+/* ── Scroll indicator ─────────────────────────────────────────── */
+function ScrollIndicator() {
+  return (
+    <div
+      className="flex flex-col items-center gap-2 mt-20 md:mt-28"
+      style={{ color: "var(--color-text-body)" }}
+    >
+      <span className="text-[10px] uppercase tracking-[0.22em] font-medium">
+        Scroll
+      </span>
+      <div className="flex flex-col items-center gap-1">
+        <span
+          className="block w-[1px] h-6 animate-pulse-soft"
+          style={{ background: "var(--border-outline)" }}
+        />
+        <span
+          className="block w-[5px] h-[5px] rounded-full"
+          style={{ background: "var(--color-primary)", opacity: 0.5 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Hero component ──────────────────────────────────────── */
 export default function Hero() {
   const { t } = useLanguage();
   const { data: profile, isLoading } = useQuery({
@@ -14,52 +141,68 @@ export default function Hero() {
     queryFn: getProfile,
   });
 
-  if (isLoading) return <div className="py-24 md:py-32 h-[400px]" />;
+  if (isLoading)
+    return <div className="py-40 md:py-48 h-[600px]" />;
+
+  /* Build 3-line headline from tagline or fallback */
+  const tagline =
+    t(profile?.tagline_en, profile?.tagline_id) ||
+    "Building Digital Experiences That Matter";
+
+  // Split tagline into 3 parts for the editorial headline
+  const words = tagline.split(" ");
+  const third = Math.ceil(words.length / 3);
+  const line1 = words.slice(0, third).join(" ");
+  const line2 = words.slice(third, third * 2).join(" ");
+  const line3 = words.slice(third * 2).join(" ");
+
+  const subtext = t(
+    `I craft web experiences that merge clean code with thoughtful design — where functionality and beauty live together.`,
+    `Saya membangun pengalaman web yang memadukan kode bersih dengan desain yang penuh pertimbangan — tempat fungsionalitas dan keindahan berdampingan.`,
+  );
 
   return (
-    <section className="py-24 md:py-32">
-      <div className="container-custom">
-        <div className="flex flex-col md:flex-row items-center gap-12">
-          <div className="flex flex-col gap-6 max-w-2xl text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl font-extrabold text-foreground tracking-tight leading-[1.1]">
-              {t(profile?.tagline_en, profile?.tagline_id) ||
-                "Building digital experiences that matter."}
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed font-medium">
-              {t(
-                `I'm ${profile?.name}, a ${profile?.role_en}. ${profile?.bio_en}`,
-                `Saya ${profile?.name}, seorang ${profile?.role_id}. ${profile?.bio_id}`,
-              )}
-            </p>
-            <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-4">
-              <Link
-                href="/projects"
-                className="px-8 py-4 bg-primary text-primary-foreground font-black dark:bg-primary/10 dark:hover:bg-primary/20 rounded-xl hover:opacity-90 transition-all flex items-center gap-2 shadow-lg shadow-primary/20"
-              >
-                {t("Explore Projects", "Lihat Proyek")} <ArrowRight size={18} />
-              </Link>
-              <Link
-                href="/blog"
-                className="px-8 py-4 bg-muted text-foreground font-black rounded-xl hover:bg-border transition-all border border-border"
-              >
-                {t("Read Blog", "Baca Blog")}
-              </Link>
-            </div>
-          </div>
+    <section
+      className="relative w-full overflow-hidden"
+      style={{ paddingTop: "clamp(5rem, 12vw, 9rem)", paddingBottom: "2rem" }}
+    >
+      {/* Decorative background layer */}
+      <HeroDecoratives />
 
-          <div className="relative w-48 h-48 md:w-64 md:h-64 shrink-0 mt-8 md:mt-0">
-            <div className="absolute inset-0 bg-primary/20 rounded-3xl rotate-6" />
-            <div className="absolute inset-0 bg-card rounded-3xl border border-border overflow-hidden shadow-2xl">
-              <Image
-                src={profile?.imageUrl || "/profile.png"}
-                alt={`${profile?.name || "Alif"} Profile`}
-                fill
-                className="object-cover grayscale hover:grayscale-0 transition-all duration-700 ease-in-out"
-                priority
-              />
-            </div>
-          </div>
+      {/* Content */}
+      <div className="container-custom relative" style={{ zIndex: 1 }}>
+        {/* Eyebrow label */}
+        <div className="eyebrow-label justify-center mb-8">
+          {t("Web Developer & UI/UX Enthusiast", "Web Developer & UI/UX Enthusiast")}
         </div>
+
+        {/* 3-line headline */}
+        <h1 className="hero-headline text-center mb-8">
+          <span className="block">{line1}</span>
+          <span className="block hero-headline-italic">{line2}</span>
+          <span className="block">{line3}</span>
+        </h1>
+
+        {/* Subtext */}
+        <p
+          className="text-center mx-auto mb-10 text-base md:text-lg leading-relaxed max-w-[560px]"
+          style={{ color: "var(--color-text-body)" }}
+        >
+          {subtext}
+        </p>
+
+        {/* CTA Buttons */}
+        <div className="flex flex-wrap justify-center gap-4">
+          <Link href="/projects" className="btn-primary">
+            {t("See My Work", "Lihat Proyek")}
+          </Link>
+          <Link href="/#contact" className="btn-outline">
+            {t("Let's Connect", "Hubungi Saya")}
+          </Link>
+        </div>
+
+        {/* Scroll indicator */}
+        <ScrollIndicator />
       </div>
     </section>
   );

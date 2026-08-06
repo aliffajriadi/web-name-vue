@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { getSkills, Skill } from "@/lib/api";
-import { Loader2, Sparkles } from "lucide-react";
 
 export default function Skills() {
   const { data: skills, isLoading } = useQuery<Skill[]>({
@@ -22,61 +21,89 @@ export default function Skills() {
 
   if (isLoading) {
     return (
-      <div className="py-20 flex justify-center items-center gap-4">
-        <Loader2 className="animate-spin text-primary" size={24} />
-        <span className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-          Calibrating Neural Net...
+      <div
+        className="py-20 flex justify-center items-center gap-3"
+        style={{ color: "var(--color-text-body)" }}
+      >
+        <span className="text-xs uppercase tracking-[0.2em] animate-pulse">
+          Loading skills...
         </span>
       </div>
     );
   }
 
   return (
-    <section className="py-32 relative overflow-hidden" id="skills">
-      {/* Ambient background effects */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -z-10" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -z-10" />
-
+    <section
+      className="py-20 md:py-28"
+      id="skills"
+      style={{ borderTop: "1px solid var(--border-outline)", background: "var(--muted)" }}
+    >
       <div className="container-custom">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-20 gap-8">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 text-primary text-[10px] font-black uppercase tracking-[0.3em]">
-              <Sparkles size={14} /> Intelligence Stack
-            </div>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-foreground tracking-tighter uppercase leading-none">
-              Skills / <br /> Tech Stack
-            </h2>
+        {/* Header */}
+        <div className="mb-16">
+          <div className="eyebrow-label mb-5" style={{ justifyContent: "flex-start" }}>
+            Tech Stack
           </div>
-          <p className="text-muted-foreground max-w-md font-medium text-lg leading-relaxed italic">
-            A curated list of technical protocols and frameworks I use to build
-            resilient digital architectures.
+          <h2
+            className="text-3xl md:text-4xl font-bold leading-tight"
+            style={{
+              fontFamily: "var(--font-playfair), 'Playfair Display', serif",
+              color: "var(--color-primary-dark)",
+            }}
+          >
+            Skills &amp;
+            <br />
+            <em style={{ color: "var(--color-accent-italic)" }}>Expertise</em>
+          </h2>
+          <p
+            className="mt-4 text-base leading-relaxed max-w-md"
+            style={{ color: "var(--color-text-body)" }}
+          >
+            A curated set of technologies I use to build resilient,
+            thoughtful digital products.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 lg:gap-20">
+        {/* Grouped skills */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 lg:gap-14">
           {groupedSkills &&
             Object.entries(groupedSkills).map(
               ([category, items]: [string, Skill[]]) => (
-                <div key={category} className="group">
-                  <h3 className="text-[10px] font-black text-primary uppercase tracking-[0.4em] mb-10 pb-4 border-b border-border group-hover:border-primary/50 transition-colors">
+                <div key={category}>
+                  {/* Category label */}
+                  <div
+                    className="text-[11px] font-semibold uppercase tracking-[0.28em] mb-5 pb-3"
+                    style={{
+                      color: "var(--color-primary)",
+                      borderBottom: "1px solid var(--border-outline)",
+                    }}
+                  >
                     {category}
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
+                  </div>
+
+                  {/* Pill skills */}
+                  <div className="flex flex-wrap gap-2.5">
                     {items.map((skill: Skill) => (
                       <div
                         key={skill.id}
-                        className="group/item relative px-5 py-3 bg-muted/30 border border-border rounded-2xl hover:border-primary/50 hover:bg-card transition-all duration-300 flex items-center gap-3 overflow-hidden"
+                        className="group/skill relative flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 cursor-default hover:-translate-y-0.5"
+                        style={{
+                          background: "var(--card)",
+                          border: "1px solid var(--border-outline)",
+                          color: "var(--color-text-body)",
+                        }}
+                        title={`${skill.level}% proficiency`}
                       >
-                        {/* Progress background */}
-                        <div
-                          className="absolute bottom-0 left-0 h-[2px] bg-primary/40 group-hover/item:h-full group-hover/item:opacity-5 transition-all duration-500"
-                          style={{ width: `${skill.level}%` }}
-                        />
-
-                        <span className="relative text-sm font-bold text-foreground group-hover/item:text-primary transition-colors">
+                        <span
+                          className="transition-colors duration-200 group-hover/skill:text-[var(--color-primary)]"
+                          style={{ color: "var(--color-primary-dark)" }}
+                        >
                           {skill.name}
                         </span>
-                        <span className="relative text-[8px] font-black text-muted-foreground opacity-40 group-hover/item:opacity-100 transition-opacity">
+                        <span
+                          className="text-[10px] opacity-50 group-hover/skill:opacity-80 transition-opacity"
+                          style={{ color: "var(--color-primary)" }}
+                        >
                           {skill.level}%
                         </span>
                       </div>

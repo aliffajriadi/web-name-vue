@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Lora } from "next/font/google";
+import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/Navbar";
@@ -10,18 +10,20 @@ import NextTopLoader from "nextjs-toploader";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const lora = Lora({
-  variable: "--font-lora",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
-    { media: "(prefers-color-scheme: dark)", color: "#020617" },
+    { media: "(prefers-color-scheme: light)", color: "#F2F8F1" },
+    { media: "(prefers-color-scheme: dark)", color: "#111A0F" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -29,13 +31,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://aliffajriadi.my.id"), // Replace with your production URL later
+  metadataBase: new URL("https://aliffajriadi.my.id"),
   title: {
     default: "Alif Fajriadi",
     template: "%s | Alif",
   },
   description:
-    "Senior Full-Stack Developer specializing in high-performance web applications, IoT, AI, and clean architecture. Explore my projects and technical insights.",
+    "Full-Stack Developer & UI/UX Enthusiast crafting thoughtful digital experiences. Specializing in IoT, AI, and clean web architecture.",
   keywords: [
     "Full-Stack Developer",
     "IoT Engineer",
@@ -57,7 +59,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Alif Fajriadi",
     description:
-      "Professional personal portfolio of Alif. Focused on IoT, AI, and modern Web Engineering.",
+      "Personal portfolio of Alif Fajriadi — Web Developer & UI/UX Enthusiast.",
     url: "/",
     siteName: "Alif.Dev",
     locale: "en_US",
@@ -66,7 +68,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Alif Fajriadi | Portfolio",
-    description: "Full-Stack Developer Specializing in IoT & AI.",
+    description: "Full-Stack Developer — IoT & AI enthusiast.",
     creator: "@yourusername",
   },
   robots: {
@@ -90,9 +92,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${jakarta.variable} ${lora.variable} font-sans antialiased selection:bg-primary/30 selection:text-primary`}
+        className={`${jakarta.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <NextTopLoader color="#2563eb" showSpinner={false} />
+        <NextTopLoader color="#3E7C3E" showSpinner={false} />
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Navbar />
