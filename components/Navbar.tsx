@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import ThemeToggle from "./ThemeToggle";
 import { useLanguage } from "@/context/LanguageContext";
+import { useFontSize } from "@/context/FontSizeContext";
 import { Languages } from "lucide-react";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { motion } from "framer-motion";
@@ -12,6 +13,7 @@ import { motion } from "framer-motion";
 export default function Navbar() {
   const pathname = usePathname();
   const { lang, setLang, t } = useLanguage();
+  const { isLargeFont, toggleFontSize } = useFontSize();
   const scrollDirection = useScrollDirection();
   const isVisible = scrollDirection !== "down";
 
@@ -91,22 +93,36 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Language + Theme controls */}
+          {/* Language + Theme + Font controls */}
           <div
-            className="flex items-center gap-3 pl-4"
+            className="flex items-center gap-2 pl-4"
             style={{ borderLeft: "1px solid var(--border-outline)" }}
           >
             <button
               onClick={() => setLang(lang === "en" ? "id" : "en")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-widest transition-all active:scale-95 border"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-widest transition-all active:scale-95 border"
               style={{
                 background: "var(--muted)",
                 borderColor: "var(--border-outline)",
                 color: "var(--color-text-nav)",
               }}
             >
-              <Languages size={13} style={{ color: "var(--color-primary)" }} />
+              <Languages size={12} style={{ color: "var(--color-primary)" }} />
               {lang}
+            </button>
+            <button
+              onClick={toggleFontSize}
+              className="flex items-center justify-center w-8 h-8 rounded-full transition-all active:scale-95 border"
+              title={isLargeFont ? t("Normal Font", "Font Normal") : t("Large Font", "Font Besar")}
+              style={{
+                background: isLargeFont ? "var(--color-primary)" : "var(--muted)",
+                borderColor: "var(--border-outline)",
+                color: isLargeFont ? "#fff" : "var(--color-primary)",
+              }}
+            >
+              <span className="font-bold font-serif" style={{ fontSize: "14px" }}>
+                {isLargeFont ? "A-" : "A+"}
+              </span>
             </button>
             <ThemeToggle />
           </div>

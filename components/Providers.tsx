@@ -4,6 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState, useEffect } from "react";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { FontSizeProvider } from "@/context/FontSizeContext";
 
 export default function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
@@ -28,7 +29,9 @@ export default function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
-          {mounted ? children : <div className="invisible">{children}</div>}
+          <FontSizeProvider>
+            {mounted ? children : <div className="invisible">{children}</div>}
+          </FontSizeProvider>
         </LanguageProvider>
       </QueryClientProvider>
     </ThemeProvider>

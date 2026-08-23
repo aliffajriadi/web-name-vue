@@ -74,6 +74,15 @@
    BASE STYLES
    ============================================ */
 
+html {
+  font-size: 17px; /* Slightly larger base font for better readability */
+  transition: font-size 0.3s ease;
+}
+
+html.text-large {
+  font-size: 19px; /* Enlarged font mode */
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
