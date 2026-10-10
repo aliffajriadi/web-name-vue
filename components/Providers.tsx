@@ -2,7 +2,7 @@
 
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode, useState } from "react";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { FontSizeProvider } from "@/context/FontSizeContext";
 
@@ -19,19 +19,11 @@ export default function Providers({ children }: { children: ReactNode }) {
       }),
   );
 
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
-
   return (
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
         <LanguageProvider>
-          <FontSizeProvider>
-            {mounted ? children : <div className="invisible">{children}</div>}
-          </FontSizeProvider>
+          <FontSizeProvider>{children}</FontSizeProvider>
         </LanguageProvider>
       </QueryClientProvider>
     </ThemeProvider>

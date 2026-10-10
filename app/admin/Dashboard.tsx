@@ -1,1102 +1,606 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  getProfile,
-  updateProfile,
-  getBlogs,
-  createBlog,
-  updateBlog,
-  deleteBlog,
-  getProjects,
-  createProject,
-  updateProject,
-  deleteProject,
-  getExperiences,
-  createExperience,
-  updateExperience,
-  deleteExperience,
-  getGallery,
-  createGalleryItem,
-  updateGalleryItem,
-  deleteGalleryItem,
-  getSkills,
-  createSkill,
-  updateSkill,
-  deleteSkill,
-  setAuthToken,
-} from "@/lib/api";
-import { useState, useEffect } from "react";
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  LogOut,
-  X,
-  Save,
-  User,
-  FileText,
-  Briefcase,
-  History,
-  Sparkles,
-  Loader2,
-  Camera,
-  Command,
-  Globe,
-  Languages as LanguagesIcon,
-  RefreshCw,
-  CheckCircle2,
-  Cpu,
+  Briefcase, Camera, Cpu, Edit2, Eye, ExternalLink, FileText, Heart, History, LayoutDashboard,
+  Loader2, LogOut, Plus, Save, Search, Star, Trash2, User, AlertCircle, CheckCircle2, ArrowUpRight,
 } from "lucide-react";
-import GhostEditor from "@/components/admin/GhostEditor";
-import ImageUploadField from "@/components/admin/ImageUploadField";
+import { getProfile, updateProfile, setAuthToken } from "@/lib/api";
+import ThemeToggle from "@/components/ThemeToggle";
+import { ConfirmDialog, Drawer, useDebounced, useToast } from "@/components/admin/ui";
+import { cn } from "@/lib/utils";
+import {
+  FIELDS, REQUIRED, RESOURCES, Tab, ResourceTab, blankFor, itemTitle, pick,
+} from "./config";
+import { ProfileForm, ResourceForm } from "./forms";
+import BlogEditor from "./BlogEditor";
 
-interface DashboardProps {
-  apiKey: string;
-  onLogout: () => void;
-}
+const NAV: { id: Tab; label: string; icon: any }[] = [
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "blogs", label: "Articles", icon: FileText },
+  { id: "projects", label: "Projects", icon: Briefcase },
+  { id: "gallery", label: "Gallery", icon: Camera },
+  { id: "experiences", label: "Experience", icon: History },
+  { id: "skills", label: "Skills", icon: Cpu },
+  { id: "profile", label: "Profile", icon: User },
+];
 
-export default function Dashboard({ apiKey, onLogout }: DashboardProps) {
-  const [tab, setTab] = useState<
-    "profile" | "blogs" | "projects" | "experiences" | "gallery" | "skills"
-  >("profile");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<any>({});
+type EditorState = { tab: ResourceTab; id: string | null; initial: Record<string, any>; data: Record<string, any> };
 
-  const [blogLang, setBlogLang] = useState<"en" | "id">("en");
-  const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "idle">(
-    "idle",
-  );
+const fmtDate = (d?: string) =>
+  d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
 
-  const queryClient = useQueryClient();
+export default function Dashboard({ apiKey, onLogout }: { apiKey: string; onLogout: () => void }) {
+  const toast = useToast();
+  const qc = useQueryClient();
+  // Dashboard only mounts after client-side auth, so reading localStorage here is safe.
+  const [tab, setTab] = useState<Tab>(() => {
+    try {
+      const saved = localStorage.getItem("admin_tab") as Tab | null;
+      return saved && NAV.some((n) => n.id === saved) ? saved : "overview";
+    } catch {
+      return "overview";
+    }
+  });
+  const [search, setSearch] = useState("");
+  const q = useDebounced(search.trim().toLowerCase());
+  const [editor, setEditor] = useState<EditorState | null>(null);
+  const [toDelete, setToDelete] = useState<{ tab: ResourceTab; item: any } | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setAuthToken(apiKey);
     return () => setAuthToken(null);
   }, [apiKey]);
 
-  // Queries
+  const go = (t: Tab) => {
+    setTab(t);
+    setSearch("");
+    try { localStorage.setItem("admin_tab", t); } catch {}
+  };
+
+  /* ───── data ───── */
+  const lists = {
+    blogs: useQuery<any[]>({ queryKey: ["admin", "blogs"], queryFn: RESOURCES.blogs.list }),
+    projects: useQuery<any[]>({ queryKey: ["admin", "projects"], queryFn: RESOURCES.projects.list }),
+    gallery: useQuery<any[]>({ queryKey: ["admin", "gallery"], queryFn: RESOURCES.gallery.list }),
+    experiences: useQuery<any[]>({ queryKey: ["admin", "experiences"], queryFn: RESOURCES.experiences.list }),
+    skills: useQuery<any[]>({ queryKey: ["admin", "skills"], queryFn: RESOURCES.skills.list }),
+  };
   const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getProfile });
-  const blogsQuery = useQuery({
-    queryKey: ["blogs-admin"],
-    queryFn: () => getBlogs(),
-  });
-  const projectsQuery = useQuery({
-    queryKey: ["projects-admin"],
-    queryFn: getProjects,
-  });
-  const experiencesQuery = useQuery({
-    queryKey: ["experiences-admin"],
-    queryFn: getExperiences,
-  });
-  const galleryQuery = useQuery({
-    queryKey: ["gallery-admin"],
-    queryFn: getGallery,
-  });
-  const skillsQuery = useQuery({
-    queryKey: ["skills-admin"],
-    queryFn: getSkills,
-  });
 
-  // Mutations
-  const mutationOptions = (key: string) => ({
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [key] });
-      closeModal();
-    },
-    onError: (error: any) => {
-      console.error(error);
-      alert(
-        `Error: ${error.response?.data?.error || error.message || "Failed to process request"}`,
-      );
-    },
-  });
-
-  const blogMutations = {
-    create: useMutation({
-      mutationFn: createBlog,
-      ...mutationOptions("blogs-admin"),
-    }),
-    update: useMutation({
-      mutationFn: (data: any) => updateBlog(editingId!, data),
-      ...mutationOptions("blogs-admin"),
-    }),
-    delete: useMutation({
-      mutationFn: deleteBlog,
-      ...mutationOptions("blogs-admin"),
-    }),
-  };
-
-  const projectMutations = {
-    create: useMutation({
-      mutationFn: createProject,
-      ...mutationOptions("projects-admin"),
-    }),
-    update: useMutation({
-      mutationFn: (data: any) => updateProject(editingId!, data),
-      ...mutationOptions("projects-admin"),
-    }),
-    delete: useMutation({
-      mutationFn: deleteProject,
-      ...mutationOptions("projects-admin"),
-    }),
-  };
-
-  const experienceMutations = {
-    create: useMutation({
-      mutationFn: createExperience,
-      ...mutationOptions("experiences-admin"),
-    }),
-    update: useMutation({
-      mutationFn: (data: any) => updateExperience(editingId!, data),
-      ...mutationOptions("experiences-admin"),
-    }),
-    delete: useMutation({
-      mutationFn: deleteExperience,
-      ...mutationOptions("experiences-admin"),
-    }),
-  };
-
-  const galleryMutations = {
-    create: useMutation({
-      mutationFn: createGalleryItem,
-      ...mutationOptions("gallery-admin"),
-    }),
-    update: useMutation({
-      mutationFn: (data: any) => updateGalleryItem(editingId!, data),
-      ...mutationOptions("gallery-admin"),
-    }),
-    delete: useMutation({
-      mutationFn: deleteGalleryItem,
-      ...mutationOptions("gallery-admin"),
-    }),
-  };
-
-  const skillMutations = {
-    create: useMutation({
-      mutationFn: createSkill,
-      ...mutationOptions("skills-admin"),
-    }),
-    update: useMutation({
-      mutationFn: (data: any) => updateSkill(editingId!, data),
-      ...mutationOptions("skills-admin"),
-    }),
-    delete: useMutation({
-      mutationFn: deleteSkill,
-      ...mutationOptions("skills-admin"),
-    }),
-  };
-
-  const profileMutation = useMutation({
-    mutationFn: updateProfile,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      alert("Success: Profile harmonized with database.");
-    },
-  });
-
-  // Handlers
-  const openEdit = (item: any) => {
-    setEditingId(item.id);
-    setFormData(item);
-    setModalOpen(true);
-  };
-
-  const openAdd = () => {
-    setEditingId(null);
-    setFormData(
-      tab === "blogs"
-        ? {
-            title_en: "",
-            title_id: "",
-            slug: "",
-            category: "",
-            excerpt_en: "",
-            excerpt_id: "",
-            content_en: "",
-            content_id: "",
-            image: "",
-          }
-        : {},
-    );
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    setEditingId(null);
-    setFormData({});
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (tab === "blogs") {
-      const required = [
-        "title_en",
-        "title_id",
-        "slug",
-        "category",
-        "excerpt_en",
-        "excerpt_id",
-        "content_en",
-        "content_id",
-      ];
-      const missing = required.filter((field) => !formData[field]);
-      if (missing.length > 0) {
-        alert(
-          `Please fill in all required fields. Missing: ${missing.map((m) => m.replace("_", " ")).join(", ")}`,
-        );
-        return;
-      }
-
-      if (editingId) {
-        blogMutations.update.mutate(formData);
-      } else {
-        blogMutations.create.mutate(formData);
-      }
-    } else if (tab === "projects") {
-      if (editingId) {
-        projectMutations.update.mutate(formData);
-      } else {
-        projectMutations.create.mutate(formData);
-      }
-    } else if (tab === "experiences") {
-      if (editingId) {
-        experienceMutations.update.mutate(formData);
-      } else {
-        experienceMutations.create.mutate(formData);
-      }
-    } else if (tab === "gallery") {
-      if (editingId) {
-        galleryMutations.update.mutate(formData);
-      } else {
-        galleryMutations.create.mutate(formData);
-      }
-    } else if (tab === "skills") {
-      if (editingId) {
-        skillMutations.update.mutate(formData);
-      } else {
-        skillMutations.create.mutate(formData);
-      }
+  const [profileData, setProfileData] = useState<Record<string, any>>({});
+  const [profileInitial, setProfileInitial] = useState<Record<string, any>>({});
+  useEffect(() => {
+    if (profileQuery.data) {
+      const p = pick(profileQuery.data, FIELDS.profile);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProfileData(p);
+      setProfileInitial(p);
     }
-  };
+  }, [profileQuery.data]);
+  const profileDirty = JSON.stringify(profileData) !== JSON.stringify(profileInitial);
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    profileMutation.mutate(formData);
-  };
+  const refresh = () => qc.invalidateQueries(); // admin + public caches
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value, type } = e.target;
-    // @ts-expect-error: suppressing implicit any for checked property check
-    const val = type === "checkbox" ? e.target.checked : value;
-    setFormData((prev: any) => ({ ...prev, [name]: val }));
+  /* ───── mutations ───── */
+  const save = useMutation({
+    mutationFn: async ({ tab, id, data }: { tab: ResourceTab; id: string | null; data: any }) => {
+      const body = pick(data, FIELDS[tab]);
+      const r = RESOURCES[tab] as any;
+      return id ? r.update(id, body) : r.create(body);
+    },
+    onSuccess: (res, vars) => {
+      refresh();
+      toast("success", vars.id ? "Changes saved" : `${RESOURCES[vars.tab].singular[0].toUpperCase()}${RESOURCES[vars.tab].singular.slice(1)} created`);
+      if (vars.tab === "blogs") {
+        // keep writing: re-baseline so "dirty" resets
+        setEditor((e) => (e ? { ...e, id: res?.id ?? e.id, initial: e.data, data: { ...e.data, id: res?.id ?? e.data.id } } : e));
+      } else {
+        setEditor(null);
+      }
+    },
+    onError: (e: any) => toast("error", e.response?.data?.error || e.message || "Could not save"),
+  });
+
+  const remove = useMutation({
+    mutationFn: ({ tab, id }: { tab: ResourceTab; id: string }) => (RESOURCES[tab] as any).remove(id),
+    onSuccess: () => {
+      refresh();
+      toast("success", "Deleted");
+      setToDelete(null);
+    },
+    onError: (e: any) => toast("error", e.response?.data?.error || e.message || "Could not delete"),
+  });
+
+  const saveProfile = useMutation({
+    mutationFn: () => updateProfile(profileData),
+    onSuccess: () => {
+      refresh();
+      setProfileInitial(profileData);
+      toast("success", "Profile updated");
+    },
+    onError: (e: any) => toast("error", e.response?.data?.error || e.message || "Could not save profile"),
+  });
+
+  /* ───── editor helpers ───── */
+  const dirty = !!editor && JSON.stringify(editor.data) !== JSON.stringify(editor.initial);
+
+  const openNew = (t: ResourceTab) => {
+    const blank = blankFor(t);
+    setEditor({ tab: t, id: null, initial: blank, data: blank });
   };
+  const openEdit = (t: ResourceTab, item: any) => {
+    const d = { ...pick(item, FIELDS[t]), ...(t === "blogs" ? { id: item.id } : {}) };
+    setEditor({ tab: t, id: item.id, initial: d, data: d });
+  };
+  const setData = useCallback(
+    (patch: Record<string, any>) => setEditor((e) => (e ? { ...e, data: { ...e.data, ...patch } } : e)),
+    [],
+  );
+  const requestClose = () => (dirty ? setConfirmDiscard(true) : setEditor(null));
+
+  const submit = useCallback(() => {
+    if (!editor) return;
+    const missing = REQUIRED[editor.tab].filter(([f]) => {
+      const v = editor.data[f];
+      return v === undefined || v === null || String(v).replace(/<[^>]*>/g, "").trim() === "";
+    });
+    if (missing.length) {
+      toast("error", `Please fill in: ${missing.map(([, l]) => l).join(", ")}`);
+      return;
+    }
+    save.mutate({ tab: editor.tab, id: editor.id, data: editor.data });
+  }, [editor, save, toast]);
 
   useEffect(() => {
-    if (tab === "profile" && profileQuery.data) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFormData(profileQuery.data);
-    }
-  }, [tab, profileQuery.data]);
+    const warn = (e: BeforeUnloadEvent) => {
+      if (dirty || profileDirty) e.preventDefault();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (e.key === "/" && !editor && tag !== "INPUT" && tag !== "TEXTAREA") {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s" && editor && editor.tab !== "blogs") {
+        e.preventDefault();
+        submit();
+      }
+    };
+    window.addEventListener("beforeunload", warn);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [dirty, profileDirty, editor, submit]);
 
-  const renderForm = () => {
-    if (tab === "blogs") {
-      return (
-        <div className="space-y-12">
-          {/* Metadata Section */}
-          <div className="bg-muted/30 p-8 rounded-4xl border border-border">
-            <div className="flex flex-col md:flex-row gap-8">
-              <div className="flex-1 space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Final URL Slug
-                    </label>
-                    <input
-                      name="slug"
-                      value={formData.slug || ""}
-                      onChange={handleChange}
-                      placeholder="e.g. advent-of-iot"
-                      className="admin-input-premium"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Category Taxonomy
-                    </label>
-                    <input
-                      name="category"
-                      value={formData.category || ""}
-                      onChange={handleChange}
-                      placeholder="e.g. Engineering"
-                      className="admin-input-premium"
-                      required
-                    />
-                  </div>
-                </div>
+  /* ───── derived ───── */
+  const counts = {
+    blogs: lists.blogs.data?.length, projects: lists.projects.data?.length, gallery: lists.gallery.data?.length,
+    experiences: lists.experiences.data?.length, skills: lists.skills.data?.length,
+  } as Record<string, number | undefined>;
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Publication Date
-                    </label>
-                    <input
-                      name="date"
-                      type="datetime-local"
-                      value={
-                        formData.date
-                          ? new Date(formData.date).toISOString().slice(0, 16)
-                          : ""
-                      }
-                      onChange={handleChange}
-                      className="admin-input-premium"
-                    />
-                  </div>
-                </div>
+  const categories = useMemo(
+    () => Array.from(new Set((lists.blogs.data || []).map((b) => b.category).filter(Boolean))),
+    [lists.blogs.data],
+  );
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Short Digest (EN)
-                    </label>
-                    <textarea
-                      name="excerpt_en"
-                      value={formData.excerpt_en || ""}
-                      onChange={handleChange}
-                      className="admin-input-premium h-24"
-                      placeholder="Catchy summary for the feed..."
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                      Ringkasan Singkat (ID)
-                    </label>
-                    <textarea
-                      name="excerpt_id"
-                      value={formData.excerpt_id || ""}
-                      onChange={handleChange}
-                      className="admin-input-premium h-24"
-                      placeholder="Ringkasan menarik untuk feed..."
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+  const filtered = (t: ResourceTab) =>
+    (lists[t].data || []).filter((i) => !q || JSON.stringify(Object.values(pick(i, FIELDS[t]))).toLowerCase().includes(q.replace(/[^\p{L}\p{N}\s-]/gu, "")));
 
-          {/* Language Switcher */}
-          <div className="flex border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-20">
-            <button
-              type="button"
-              onClick={() => setBlogLang("en")}
-              className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-3 ${blogLang === "en" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            >
-              <Globe size={14} /> English Manuscript
-            </button>
-            <button
-              type="button"
-              onClick={() => setBlogLang("id")}
-              className={`px-8 py-5 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex items-center gap-3 ${blogLang === "id" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-            >
-              <LanguagesIcon size={14} /> Naskah Indonesia
-            </button>
-            <div className="ml-auto pr-8 self-center">
-              {saveStatus === "saving" && (
-                <span className="flex items-center gap-2 text-[10px] font-bold text-primary animate-pulse">
-                  <RefreshCw size={12} className="animate-spin" /> Syncing...
-                </span>
-              )}
-              {saveStatus === "saved" && (
-                <span className="flex items-center gap-2 text-[10px] font-bold text-green-500">
-                  <CheckCircle2 size={12} /> Persisted
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Ghost Style Editor */}
-          <div className="bg-background min-h-screen rounded-[3rem] border border-border overflow-hidden">
-            <GhostEditor
-              key={`${editingId}-${blogLang}`}
-              title={
-                blogLang === "en"
-                  ? formData.title_en || ""
-                  : formData.title_id || ""
-              }
-              onTitleChange={(val) => {
-                const field = blogLang === "en" ? "title_en" : "title_id";
-                setFormData((prev: any) => ({ ...prev, [field]: val }));
-              }}
-              content={
-                blogLang === "en"
-                  ? formData.content_en || ""
-                  : formData.content_id || ""
-              }
-              onContentChange={(html) => {
-                const field = blogLang === "en" ? "content_en" : "content_id";
-                setFormData((prev: any) => ({ ...prev, [field]: html }));
-                setSaveStatus("saved");
-                setTimeout(() => setSaveStatus("idle"), 2000);
-              }}
-              featureImage={formData.image || ""}
-              onFeatureImageChange={(url) =>
-                setFormData((prev: any) => ({ ...prev, image: url }))
-              }
-              placeholder={
-                blogLang === "en"
-                  ? "Tell your story in English..."
-                  : "Tulis cerita Anda dalam Bahasa Indonesia..."
-              }
-            />
-          </div>
-        </div>
-      );
-    }
-    if (tab === "projects") {
-      return (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              name="title_en"
-              value={formData.title_en || ""}
-              onChange={handleChange}
-              placeholder="Project Name (EN)"
-              className="admin-input-premium"
-              required
-            />
-            <input
-              name="title_id"
-              value={formData.title_id || ""}
-              onChange={handleChange}
-              placeholder="Nama Proyek (ID)"
-              className="admin-input-premium"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-4">
-            <input
-              name="type"
-              value={formData.type || ""}
-              onChange={handleChange}
-              placeholder="Type (e.g. IoT, AI)"
-              className="admin-input-premium"
-              required
-            />
-            <input
-              name="techStack"
-              value={formData.techStack || ""}
-              onChange={handleChange}
-              placeholder="Tech (comma separated)"
-              className="admin-input-premium"
-              required
-            />
-            <ImageUploadField
-              label="Project Image"
-              name="image"
-              value={formData.image || ""}
-              onChange={(url) =>
-                setFormData((prev: any) => ({ ...prev, image: url }))
-              }
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <textarea
-              name="description_en"
-              value={formData.description_en || ""}
-              onChange={handleChange}
-              placeholder="Description (EN)"
-              className="admin-input-premium h-32"
-              required
-            />
-            <textarea
-              name="description_id"
-              value={formData.description_id || ""}
-              onChange={handleChange}
-              placeholder="Deskripsi (ID)"
-              className="admin-input-premium h-32"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              name="demoUrl"
-              value={formData.demoUrl || ""}
-              onChange={handleChange}
-              placeholder="Live Demo URL"
-              className="admin-input-premium"
-            />
-            <input
-              name="githubUrl"
-              value={formData.githubUrl || ""}
-              onChange={handleChange}
-              placeholder="GitHub URL"
-              className="admin-input-premium"
-            />
-          </div>
-        </div>
-      );
-    }
-    if (tab === "gallery") {
-      return (
-        <div className="space-y-6">
-          <ImageUploadField
-            label="Visual Matrix Source"
-            name="imageUrl"
-            value={formData.imageUrl || ""}
-            onChange={(url) =>
-              setFormData((prev: any) => ({ ...prev, imageUrl: url }))
-            }
-          />
-          <div className="grid grid-cols-2 gap-6">
-            <input
-              name="location"
-              value={formData.location || ""}
-              onChange={handleChange}
-              placeholder="Location (e.g. Tokyo, Japan)"
-              className="admin-input-premium"
-            />
-            <input
-              name="date"
-              type="date"
-              value={
-                formData.date
-                  ? new Date(formData.date).toISOString().split("T")[0]
-                  : ""
-              }
-              onChange={handleChange}
-              className="admin-input-premium"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Caption (EN)
-              </label>
-              <textarea
-                name="caption_en"
-                value={formData.caption_en || ""}
-                onChange={handleChange}
-                placeholder="English caption..."
-                className="admin-input-premium h-32"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Caption (ID)
-              </label>
-              <textarea
-                name="caption_id"
-                value={formData.caption_id || ""}
-                onChange={handleChange}
-                placeholder="Keterangan Bahasa Indonesia..."
-                className="admin-input-premium h-32"
-                required
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
-    if (tab === "experiences") {
-      return (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <input
-              name="year"
-              value={formData.year || ""}
-              onChange={handleChange}
-              placeholder="Years (e.g. 2024-Now)"
-              className="admin-input-premium"
-              required
-            />
-            <input
-              name="company"
-              value={formData.company || ""}
-              onChange={handleChange}
-              placeholder="Company"
-              className="admin-input-premium"
-              required
-            />
-            <input
-              name="order"
-              type="number"
-              value={formData.order || 0}
-              onChange={handleChange}
-              placeholder="Sort Order"
-              className="admin-input-premium"
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              name="role_en"
-              value={formData.role_en || ""}
-              onChange={handleChange}
-              placeholder="Role Name (EN)"
-              className="admin-input-premium"
-              required
-            />
-            <input
-              name="role_id"
-              value={formData.role_id || ""}
-              onChange={handleChange}
-              placeholder="Peran (ID)"
-              className="admin-input-premium"
-              required
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <textarea
-              name="description_en"
-              value={formData.description_en || ""}
-              onChange={handleChange}
-              placeholder="Key Achievements (EN)"
-              className="admin-input-premium h-40"
-              required
-            />
-            <textarea
-              name="description_id"
-              value={formData.description_id || ""}
-              onChange={handleChange}
-              placeholder="Pencapaian Utama (ID)"
-              className="admin-input-premium h-40"
-              required
-            />
-          </div>
-        </div>
-      );
-    }
-    if (tab === "skills") {
-      return (
-        <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Skill Name
-              </label>
-              <input
-                name="name"
-                value={formData.name || ""}
-                onChange={handleChange}
-                placeholder="e.g. Next.js"
-                className="admin-input-premium"
-                required
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Category
-              </label>
-              <input
-                name="category"
-                value={formData.category || ""}
-                onChange={handleChange}
-                placeholder="e.g. Frontend"
-                className="admin-input-premium"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Proficiency (%)
-              </label>
-              <input
-                name="level"
-                type="number"
-                value={formData.level || 0}
-                onChange={handleChange}
-                className="admin-input-premium"
-                min="0"
-                max="100"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Display Order
-              </label>
-              <input
-                name="order"
-                type="number"
-                value={formData.order || 0}
-                onChange={handleChange}
-                className="admin-input-premium"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                Icon (Optional)
-              </label>
-              <input
-                name="icon"
-                value={formData.icon || ""}
-                onChange={handleChange}
-                placeholder="Lucide name or URL"
-                className="admin-input-premium"
-              />
-            </div>
-          </div>
-        </div>
-      );
-    }
-  };
-
-  const isWorking =
-    blogsQuery.isLoading ||
-    projectsQuery.isLoading ||
-    experiencesQuery.isLoading ||
-    profileQuery.isLoading ||
-    galleryQuery.isLoading ||
-    skillsQuery.isLoading;
-
-  const isMutating =
-    blogMutations.create.isPending ||
-    blogMutations.update.isPending ||
-    projectMutations.create.isPending ||
-    projectMutations.update.isPending ||
-    experienceMutations.create.isPending ||
-    experienceMutations.update.isPending ||
-    galleryMutations.create.isPending ||
-    galleryMutations.update.isPending ||
-    skillMutations.create.isPending ||
-    skillMutations.update.isPending;
+  /* ───── render ───── */
+  const resTab = tab !== "overview" && tab !== "profile" ? (tab as ResourceTab) : null;
 
   return (
-    <div className="py-12 pb-40 lg:pb-20">
-      <div className="container-custom max-w-7xl!">
-        <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-8">
-          <div>
-            <h1 className="text-4xl font-black text-foreground flex items-center gap-4 tracking-tighter uppercase">
-              <span className="p-3 bg-primary text-primary-foreground rounded-2xl shadow-xl shadow-primary/30">
-                <Command />
-              </span>{" "}
-              Command Center
-            </h1>
+    <div className="min-h-screen lg:grid lg:grid-cols-[232px_1fr]">
+      {/* sidebar */}
+      <aside className="hidden border-r border-border bg-muted/30 lg:block">
+        <div className="sticky top-0 flex h-screen flex-col p-4">
+          <Link href="/" className="mb-6 flex items-center gap-2 px-2 py-1 font-display text-xl font-bold">
+            alif<span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
+            <span className="ml-1 rounded-md border border-border px-1.5 py-0.5 font-mono text-[10px] font-normal uppercase tracking-wider text-muted-foreground">admin</span>
+          </Link>
+          <nav className="space-y-0.5" aria-label="Admin sections">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => go(n.id)}
+                aria-current={tab === n.id ? "page" : undefined}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors",
+                  tab === n.id ? "bg-[var(--ink)] text-[color:var(--paper)]" : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                <n.icon size={16} />
+                <span className="grow text-left">{n.label}</span>
+                {counts[n.id] !== undefined && (
+                  <span className={cn("font-mono text-[11px]", tab === n.id ? "opacity-70" : "text-muted-foreground")}>{counts[n.id]}</span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="mt-auto space-y-2 border-t border-border pt-4">
+            <Link href="/" target="_blank" className="btn-sm w-full justify-between">
+              View site <ExternalLink size={14} />
+            </Link>
+            <div className="flex gap-2">
+              <ThemeToggle />
+              <button onClick={onLogout} className="btn-sm danger grow justify-center">
+                <LogOut size={14} /> Sign out
+              </button>
+            </div>
           </div>
-          <button
-            onClick={onLogout}
-            className="flex items-center gap-2 text-red-500 hover:text-white hover:bg-red-500 transition-all border border-red-500/30 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest"
-          >
-            <LogOut size={16} /> Sign Out
-          </button>
-        </header>
+        </div>
+      </aside>
 
-        <div className="flex gap-1 p-1.5 bg-muted/30 backdrop-blur-md rounded-4xl border border-border mb-12 sticky top-20 z-40 overflow-x-auto no-scrollbar shadow-2xl">
-          {[
-            { id: "profile", icon: User, label: "Identity" },
-            { id: "blogs", icon: FileText, label: "Archive" },
-            { id: "projects", icon: Briefcase, label: "Laboratory" },
-            { id: "gallery", icon: Camera, label: "Visuals" },
-            { id: "experiences", icon: History, label: "Timeline" },
-            { id: "skills", icon: Cpu, label: "Neural Net" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              //@ts-expect-error: suppressing implicit any for tab id
-              onClick={() => setTab(t.id)}
-              className={`flex items-center gap-2.5 py-3 px-8 rounded-3xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${
-                tab === t.id
-                  ? "bg-background text-primary shadow-xl border border-border"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <t.icon size={18} /> {t.label}
-            </button>
-          ))}
+      <div className="min-w-0">
+        {/* mobile top bar */}
+        <div className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-xl lg:hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <span className="font-display text-lg font-bold">alif <span className="text-[var(--accent)]">admin</span></span>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <button onClick={onLogout} className="grid h-9 w-9 place-items-center rounded-full border border-border" aria-label="Sign out">
+                <LogOut size={15} />
+              </button>
+            </div>
+          </div>
+          <nav className="scrollbar-hide flex gap-1 overflow-x-auto px-3 pb-2" aria-label="Admin sections">
+            {NAV.map((n) => (
+              <button
+                key={n.id}
+                onClick={() => go(n.id)}
+                className={cn(
+                  "flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-xs font-medium",
+                  tab === n.id ? "bg-[var(--ink)] text-[color:var(--paper)]" : "text-muted-foreground",
+                )}
+              >
+                <n.icon size={14} /> {n.label}
+              </button>
+            ))}
+          </nav>
         </div>
 
-        {tab === "profile" ? (
-          <div className="bg-card border border-border rounded-[2.5rem] p-10 max-w-4xl mx-auto shadow-2xl">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="p-3 bg-primary/10 rounded-2xl text-primary">
-                <Sparkles size={24} />
-              </div>
-              <h2 className="text-2xl font-black uppercase tracking-[0.2em]">
-                Profile Config
-              </h2>
-            </div>
-            <form onSubmit={handleProfileSubmit} className="space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <input
-                  name="name"
-                  value={formData.name || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Name"
-                  required
-                />
-                <ImageUploadField
-                  label="Profile Photo"
-                  name="imageUrl"
-                  value={formData.imageUrl || ""}
-                  onChange={(url) =>
-                    setFormData((prev: any) => ({ ...prev, imageUrl: url }))
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <input
-                  name="role_en"
-                  value={formData.role_en || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Role (EN)"
-                  required
-                />
-                <input
-                  name="role_id"
-                  value={formData.role_id || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Role (ID)"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <input
-                  name="tagline_en"
-                  value={formData.tagline_en || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Tagline (EN)"
-                  required
-                />
-                <input
-                  name="tagline_id"
-                  value={formData.tagline_id || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium"
-                  placeholder="Tagline (ID)"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <textarea
-                  name="bio_en"
-                  value={formData.bio_en || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium h-40"
-                  placeholder="Bio (EN)"
-                  required
-                />
-                <textarea
-                  name="bio_id"
-                  value={formData.bio_id || ""}
-                  onChange={handleChange}
-                  className="admin-input-premium h-40"
-                  placeholder="Bio (ID)"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={profileMutation.isPending}
-                className="w-full bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] py-5 rounded-3xl flex items-center justify-center gap-3 hover:opacity-90 shadow-2xl shadow-primary/30 transition-all"
-              >
-                {profileMutation.isPending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Save size={20} />
-                )}{" "}
-                Commit Changes
-              </button>
-            </form>
-          </div>
-        ) : (
-          <div className="bg-card border border-border rounded-[2.5rem] p-10 shadow-2xl">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 gap-6">
-              <h2 className="text-3xl font-black uppercase tracking-tight">
-                {tab} Records
-              </h2>
-              <button
-                onClick={openAdd}
-                className="w-full md:w-auto flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-105 shadow-2xl shadow-primary/30 transition-all"
-              >
-                <Plus size={20} /> New Record
-              </button>
-            </div>
+        <main className="mx-auto max-w-[1040px] px-4 py-8 md:px-8 md:py-10">
+          {/* ───────── OVERVIEW ───────── */}
+          {tab === "overview" && (
+            <Overview lists={lists} go={go} openNew={openNew} openEdit={openEdit} name={profileQuery.data?.name} />
+          )}
 
-            {isWorking ? (
-              <div className="py-20 flex justify-center">
-                <Loader2 className="animate-spin text-primary" size={48} />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(tab === "blogs"
-                  ? blogsQuery.data
-                  : tab === "projects"
-                    ? projectsQuery.data
-                    : tab === "gallery"
-                      ? galleryQuery.data
-                      : tab === "skills"
-                        ? skillsQuery.data
-                        : experiencesQuery.data
-                )?.map((item: any) => (
-                  <div
-                    key={item.id}
-                    className="p-6 bg-muted/20 border border-border rounded-3xl group hover:border-primary/50 transition-all"
-                  >
-                    {item.imageUrl || item.image ? (
-                      <div className="relative aspect-square w-full rounded-2xl bg-muted overflow-hidden border border-border mb-4">
-                        <Image
-                          src={item.imageUrl || item.image}
-                          alt=""
-                          fill
-                          className="object-cover grayscale group-hover:grayscale-0 transition-all"
-                        />
-                      </div>
-                    ) : null}
-                    <h3 className="font-bold text-foreground text-lg truncate mb-1">
-                      {item.title_en ||
-                        item.caption_en ||
-                        item.role_en ||
-                        item.name ||
-                        "Untitled"}
-                    </h3>
-                    <div className="flex justify-between items-center mt-4">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-primary italic">
-                        {tab === "blogs"
-                          ? item.category
-                          : tab === "gallery"
-                            ? item.location || "Undisclosed"
-                            : tab === "skills"
-                              ? `${item.category || "General"} • ${item.level}%`
-                              : item.company || item.type}
-                      </span>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="p-2 text-muted-foreground hover:text-primary transition-all"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm("Delete permanently?")) {
-                              if (tab === "blogs")
-                                blogMutations.delete.mutate(item.id);
-                              if (tab === "projects")
-                                projectMutations.delete.mutate(item.id);
-                              if (tab === "gallery")
-                                galleryMutations.delete.mutate(item.id);
-                              if (tab === "experiences")
-                                experienceMutations.delete.mutate(item.id);
-                              if (tab === "skills")
-                                skillMutations.delete.mutate(item.id);
-                            }
-                          }}
-                          className="p-2 text-muted-foreground hover:text-red-500 transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
+          {/* ───────── LIST ───────── */}
+          {resTab && (
+            <>
+              <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h1 className="font-display text-3xl">{RESOURCES[resTab].label}</h1>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {counts[resTab] ?? "…"} total{q ? ` · ${filtered(resTab).length} match “${search}”` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      ref={searchRef}
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search…  ( / )"
+                      aria-label="Search"
+                      className="field-input !h-10 !w-48 !py-0 !pl-9 sm:!w-60"
+                    />
                   </div>
-                ))}
+                  <button className="btn-sm solid !h-10" onClick={() => openNew(resTab)}>
+                    <Plus size={15} /> New {RESOURCES[resTab].singular}
+                  </button>
+                </div>
+              </header>
+
+              {lists[resTab].isLoading ? (
+                <div className="grid place-items-center py-24"><Loader2 className="animate-spin text-muted-foreground" /></div>
+              ) : filtered(resTab).length === 0 ? (
+                <Empty tab={resTab} searching={!!q} onNew={() => openNew(resTab)} />
+              ) : (
+                <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+                  {filtered(resTab).map((item) => (
+                    <Row key={item.id} tab={resTab} item={item} onEdit={() => openEdit(resTab, item)} onDelete={() => setToDelete({ tab: resTab, item })} />
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+
+          {/* ───────── PROFILE ───────── */}
+          {tab === "profile" && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                saveProfile.mutate();
+              }}
+            >
+              <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h1 className="font-display text-3xl">Profile</h1>
+                  <p className="mt-1 text-sm text-muted-foreground">Shown on the home page, About section and article author card.</p>
+                </div>
+                <button type="submit" disabled={!profileDirty || saveProfile.isPending} className="btn-sm solid !h-10">
+                  {saveProfile.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {profileDirty ? "Save changes" : "Saved"}
+                </button>
+              </header>
+              <div className="rounded-2xl border border-border bg-card p-5 md:p-8">
+                {profileQuery.isLoading ? (
+                  <div className="grid place-items-center py-16"><Loader2 className="animate-spin text-muted-foreground" /></div>
+                ) : (
+                  <ProfileForm data={profileData} set={(p) => setProfileData((d) => ({ ...d, ...p }))} />
+                )}
               </div>
-            )}
-          </div>
-        )}
+            </form>
+          )}
+        </main>
       </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-100 flex items-center justify-center bg-background/80 backdrop-blur-3xl p-4 md:p-8">
-          <div className="bg-card border border-border w-full max-w-6xl rounded-[3rem] shadow-2xl flex flex-col max-h-[95vh] animate-in zoom-in-95 duration-300">
-            <div className="p-8 border-b border-border flex justify-between items-center bg-card/80 backdrop-blur-md sticky top-0 z-10">
-              <h3 className="text-xl font-black uppercase tracking-[0.3em]">
-                {editingId ? "Updating" : "Creating"} {tab.slice(0, -1)} Record
-              </h3>
-              <button
-                onClick={closeModal}
-                className="p-4 bg-muted hover:bg-red-500 hover:text-white rounded-3xl transition-all"
-              >
-                <X size={24} />
-              </button>
-            </div>
-            <form
-              onSubmit={handleSubmit}
-              className={`overflow-y-auto custom-scrollbar grow ${tab === "blogs" ? "p-0" : "p-10 space-y-10"}`}
-            >
-              {renderForm()}
-              <div className="pt-10 border-t border-border flex gap-4">
-                <button
-                  type="submit"
-                  disabled={isMutating}
-                  className="grow bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] py-6 rounded-4xl flex items-center justify-center gap-4 hover:brightness-110 shadow-3xl shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                  {isMutating ? (
-                    <Loader2 className="animate-spin" size={24} />
-                  ) : (
-                    <Save size={24} />
-                  )}
-                  {isMutating
-                    ? "Deploying..."
-                    : editingId
-                      ? "Update Record"
-                      : "Deploy Record"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="px-12 py-6 bg-muted text-foreground font-black uppercase tracking-widest rounded-4xl hover:bg-border transition-all"
-                >
-                  Abort
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {/* ───────── editors ───────── */}
+      {editor?.tab === "blogs" && (
+        <BlogEditor
+          data={editor.data}
+          set={setData}
+          isNew={!editor.id}
+          dirty={dirty}
+          saving={save.isPending}
+          categories={categories}
+          onSave={submit}
+          onClose={requestClose}
+        />
       )}
 
-      <style jsx global>{`
-        .admin-input-premium {
-          width: 100%;
-          background: var(--muted);
-          border: 1px solid var(--border);
-          border-radius: 1.5rem;
-          padding: 1.25rem 1.75rem;
-          color: var(--foreground);
-          font-size: 1rem;
-          font-weight: 500;
-          outline: none;
-          transition: all 0.3s;
+      <Drawer
+        open={!!editor && editor.tab !== "blogs"}
+        title={editor ? `${editor.id ? "Edit" : "New"} ${RESOURCES[editor.tab].singular}` : ""}
+        subtitle={dirty ? "Unsaved changes" : "Ctrl/⌘ + S to save"}
+        onClose={requestClose}
+        footer={
+          <>
+            <button type="button" className="btn-sm" onClick={requestClose}>Cancel</button>
+            <button type="submit" form="drawer-form" className="btn-sm solid" disabled={save.isPending || (!dirty && !!editor?.id)}>
+              {save.isPending ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {editor?.id ? "Save changes" : "Create"}
+            </button>
+          </>
         }
-        .admin-input-premium:focus {
-          border-color: var(--primary);
-          box-shadow: 0 0 0 6px
-            color-mix(in srgb, var(--primary), transparent 90%);
-        }
-        .admin-textarea-medium {
-          width: 100%;
-          background: var(--muted);
-          border: 1px solid var(--border);
-          border-radius: 2rem;
-          padding: 1.5rem;
-          color: var(--foreground);
-          min-height: 300px;
-          outline: none;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: var(--border);
-          border-radius: 50px;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
+      >
+        {editor && editor.tab !== "blogs" && (
+          <form
+            id="drawer-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              submit();
+            }}
+          >
+            <ResourceForm tab={editor.tab} data={editor.data} set={setData} />
+          </form>
+        )}
+      </Drawer>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        danger
+        title={`Delete this ${toDelete ? RESOURCES[toDelete.tab].singular : ""}?`}
+        body={toDelete ? <>“{itemTitle(toDelete.tab, toDelete.item)}” will be permanently removed. This can’t be undone.</> : null}
+        confirmLabel="Delete"
+        loading={remove.isPending}
+        onCancel={() => setToDelete(null)}
+        onConfirm={() => toDelete && remove.mutate({ tab: toDelete.tab, id: toDelete.item.id })}
+      />
+      <ConfirmDialog
+        open={confirmDiscard}
+        title="Discard unsaved changes?"
+        body="You have edits that haven’t been saved."
+        confirmLabel="Discard"
+        danger
+        onCancel={() => setConfirmDiscard(false)}
+        onConfirm={() => {
+          setConfirmDiscard(false);
+          setEditor(null);
+        }}
+      />
     </div>
+  );
+}
+
+/* ───────────────────────── list rows ───────────────────────── */
+
+function Thumb({ src }: { src?: string }) {
+  return (
+    <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+      {src && <Image src={src} alt="" fill sizes="80px" className="object-cover" />}
+    </span>
+  );
+}
+
+function Row({ tab, item, onEdit, onDelete }: { tab: ResourceTab; item: any; onEdit: () => void; onDelete: () => void }) {
+  const title = itemTitle(tab, item);
+  let sub: React.ReactNode = null;
+  let thumb: string | undefined;
+  let extra: React.ReactNode = null;
+
+  if (tab === "blogs") {
+    thumb = item.image;
+    const en = !!item.content_en, id = !!item.content_id;
+    sub = (
+      <>
+        <span className="chip !py-0.5">{item.category}</span>
+        <span>{fmtDate(item.date)}</span>
+        <span className="inline-flex items-center gap-1"><Eye size={12} /> {item.views ?? 0}</span>
+        <span className="inline-flex items-center gap-1"><Heart size={12} /> {item.likesCount ?? 0}</span>
+      </>
+    );
+    extra = (
+      <span className="hidden gap-1 font-mono text-[10px] sm:flex">
+        <span className={cn("rounded px-1.5 py-0.5", en ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-amber-500/15 text-amber-600")}>EN</span>
+        <span className={cn("rounded px-1.5 py-0.5", id ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-amber-500/15 text-amber-600")}>ID</span>
+      </span>
+    );
+  } else if (tab === "projects") {
+    thumb = item.image;
+    sub = (<><span className="chip !py-0.5">{item.type}</span><span className="truncate">{item.techStack}</span></>);
+    extra = item.isFeatured ? <span className="hidden items-center gap-1 text-xs text-[var(--accent)] sm:flex"><Star size={12} className="fill-current" /> Featured</span> : null;
+  } else if (tab === "gallery") {
+    thumb = item.imageUrl;
+    sub = (<><span>{item.location || "No location"}</span><span>{fmtDate(item.date)}</span><span className="inline-flex items-center gap-1"><Heart size={12} /> {item.likesCount ?? 0}</span></>);
+  } else if (tab === "experiences") {
+    sub = (<><span className="font-mono">{item.year}</span><span>{item.company}</span></>);
+  } else {
+    sub = (
+      <>
+        <span className="chip !py-0.5">{item.category || "General"}</span>
+        <span className="h-1.5 w-24 overflow-hidden rounded-full bg-muted"><span className="block h-full bg-[var(--accent)]" style={{ width: `${item.level}%` }} /></span>
+        <span className="font-mono">{item.level}%</span>
+      </>
+    );
+  }
+
+  return (
+    <li className="group flex items-center gap-4 p-4 transition-colors hover:bg-muted/40">
+      {(tab === "blogs" || tab === "projects" || tab === "gallery") && <Thumb src={thumb} />}
+      <button onClick={onEdit} className="min-w-0 grow text-left" aria-label={`Edit ${title}`}>
+        <div className="truncate font-medium">{title}</div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">{sub}</div>
+      </button>
+      {extra}
+      <div className="flex shrink-0 items-center gap-1">
+        {tab === "blogs" && item.slug && (
+          <Link href={`/blog/${item.slug}`} target="_blank" className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="View on site" title="View on site">
+            <ExternalLink size={15} />
+          </Link>
+        )}
+        <button onClick={onEdit} className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Edit" title="Edit">
+          <Edit2 size={15} />
+        </button>
+        <button onClick={onDelete} className="grid h-9 w-9 place-items-center rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-500" aria-label="Delete" title="Delete">
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </li>
+  );
+}
+
+function Empty({ tab, searching, onNew }: { tab: ResourceTab; searching: boolean; onNew: () => void }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-border py-20 text-center">
+      <p className="font-display text-2xl">{searching ? "No matches" : `No ${RESOURCES[tab].label.toLowerCase()} yet`}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{searching ? "Try a different keyword." : `Create your first ${RESOURCES[tab].singular} to get started.`}</p>
+      {!searching && (
+        <button className="btn-sm solid mt-6" onClick={onNew}>
+          <Plus size={15} /> New {RESOURCES[tab].singular}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ───────────────────────── overview ───────────────────────── */
+
+function Overview({ lists, go, openNew, openEdit, name }: { lists: Record<ResourceTab, { data?: any[] }>; go: (t: Tab) => void; openNew: (t: ResourceTab) => void; openEdit: (t: ResourceTab, i: any) => void; name?: string }) {
+  const blogs = lists.blogs.data || [];
+  const views = blogs.reduce((n, b) => n + (b.views || 0), 0);
+  const likes = blogs.reduce((n, b) => n + (b.likesCount || 0), 0);
+  const top = [...blogs].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+
+  // things worth fixing — mostly SEO
+  const issues: { text: string; item: any }[] = [];
+  blogs.forEach((b) => {
+    const t = b.title_en || b.slug;
+    if (!b.image) issues.push({ text: `“${t}” has no cover image (used for social previews)`, item: b });
+    const n = (b.excerpt_en || "").length;
+    if (n && (n < 70 || n > 170)) issues.push({ text: `“${t}” excerpt is ${n} chars — aim for 90–160`, item: b });
+    if (!b.content_id) issues.push({ text: `“${t}” has no Indonesian content`, item: b });
+  });
+
+  const stats = [
+    { label: "Articles", value: blogs.length, icon: FileText },
+    { label: "Total views", value: views.toLocaleString(), icon: Eye },
+    { label: "Article likes", value: likes.toLocaleString(), icon: Heart },
+    { label: "Projects", value: lists.projects.data?.length ?? 0, icon: Briefcase },
+  ];
+
+  return (
+    <>
+      <header className="mb-8">
+        <h1 className="font-display text-3xl md:text-4xl">
+          Hi{name ? `, ${name.split(" ")[0]}` : ""} <span className="font-accent text-[var(--accent)]">👋</span>
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">Here’s what’s happening on your site.</p>
+      </header>
+
+      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-2xl border border-border bg-card p-4 md:p-5">
+            <s.icon size={16} className="text-[var(--accent)]" />
+            <div className="mt-3 font-display text-3xl tabular-nums">{s.value}</div>
+            <div className="text-xs text-muted-foreground">{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mb-8 flex flex-wrap gap-2">
+        <button className="btn-sm solid" onClick={() => openNew("blogs")}><Plus size={14} /> Write article</button>
+        <button className="btn-sm" onClick={() => openNew("projects")}><Plus size={14} /> Add project</button>
+        <button className="btn-sm" onClick={() => openNew("gallery")}><Plus size={14} /> Add photo</button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-2xl border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border px-5 py-3.5">
+            <h2 className="text-sm font-medium">Top articles</h2>
+            <button onClick={() => go("blogs")} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">All <ArrowUpRight size={12} /></button>
+          </div>
+          {top.length === 0 ? (
+            <p className="px-5 py-10 text-center text-sm text-muted-foreground">No articles yet.</p>
+          ) : (
+            <ol className="divide-y divide-border">
+              {top.map((b, i) => (
+                <li key={b.id}>
+                  <button onClick={() => openEdit("blogs", b)} className="flex w-full items-center gap-3 px-5 py-3 text-left hover:bg-muted/40">
+                    <span className="w-4 font-mono text-xs text-muted-foreground">{i + 1}</span>
+                    <span className="min-w-0 grow truncate text-sm">{b.title_en}</span>
+                    <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Eye size={12} /> {b.views ?? 0}</span>
+                    <span className="inline-flex items-center gap-1 font-mono text-xs text-muted-foreground"><Heart size={12} /> {b.likesCount ?? 0}</span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
+
+        <section className="rounded-2xl border border-border bg-card">
+          <div className="border-b border-border px-5 py-3.5">
+            <h2 className="text-sm font-medium">Needs attention</h2>
+          </div>
+          {issues.length === 0 ? (
+            <p className="flex items-center justify-center gap-2 px-5 py-10 text-sm text-muted-foreground">
+              <CheckCircle2 size={16} className="text-[var(--accent)]" /> Everything looks good.
+            </p>
+          ) : (
+            <ul className="max-h-[320px] divide-y divide-border overflow-y-auto">
+              {issues.slice(0, 12).map((x, i) => (
+                <li key={i}>
+                  <button onClick={() => openEdit("blogs", x.item)} className="flex w-full items-start gap-3 px-5 py-3 text-left text-sm hover:bg-muted/40">
+                    <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-500" />
+                    <span>{x.text}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </>
   );
 }

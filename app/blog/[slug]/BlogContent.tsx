@@ -1,423 +1,403 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ChevronLeft,
-  Calendar,
-  Tag,
-  Clock,
-  Share2,
-  Check,
-  InstagramIcon,
-  LinkedinIcon,
-} from "lucide-react";
 import Image from "next/image";
-import { useLanguage } from "@/context/LanguageContext";
-import parse from "html-react-parser";
-import { Blog, API_BASE_URL, getProfile, getBlogs } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import parse, { DOMNode, Element, attributesToProps, domToReact } from "html-react-parser";
+import { ArrowLeft, ArrowRight, ArrowUpRight, Calendar, Clock, Eye } from "lucide-react";
+import { Blog, getBlogs, getProfile, registerBlogView } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
+import { htmlToText, readingMinutes, SITE } from "@/lib/site";
+import ReadingProgress from "@/components/blog/ReadingProgress";
+import TableOfContents, { Heading } from "@/components/blog/TableOfContents";
+import LikeButton, { useBlogStats } from "@/components/blog/LikeButton";
+import ShareButtons from "@/components/blog/ShareButtons";
+import CodeBlock from "@/components/blog/CodeBlock";
+import PostCard from "@/components/blog/PostCard";
+import BookmarkButton from "@/components/blog/BookmarkButton";
+import Lightbox, { LightboxImage } from "@/components/blog/Lightbox";
+import SelectionToolbar from "@/components/blog/SelectionToolbar";
+import ListenButton from "@/components/blog/ListenButton";
+import FloatingActions from "@/components/blog/FloatingActions";
+import { useReadingProgress } from "@/hooks/useReadingProgress";
+
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\p{L}\p{N}\s-]/gu, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 70) || "section";
+
+/** Pull h2/h3 out of the raw HTML so the TOC exists on the very first render. */
+function extractHeadings(html: string): Heading[] {
+  const seen = new Map<string, number>();
+  const out: Heading[] = [];
+  for (const m of html.matchAll(/<h([23])[^>]*>([\s\S]*?)<\/h\1>/gi)) {
+    const text = htmlToText(m[2]);
+    if (!text) continue;
+    const base = slugify(text);
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    out.push({ id: n ? `${base}-${n}` : base, text, level: Number(m[1]) as 2 | 3 });
+  }
+  return out;
+}
+
+function nodeText(n: unknown): string {
+  const node = n as { data?: string; children?: unknown[] };
+  if (typeof node.data === "string") return node.data;
+  return (node.children || []).map(nodeText).join("");
+}
+
+function renderArticle(html: string, headings: Heading[]) {
+  let h = 0;
+  return parse(html, {
+    replace(node) {
+      if (!(node instanceof Element)) return;
+
+      if (node.name === "h2" || node.name === "h3") {
+        const text = htmlToText(nodeText(node));
+        const heading = text ? headings[h++] : undefined;
+        const Tag = node.name;
+        return (
+          <Tag id={heading?.id}>
+            {domToReact(node.children as DOMNode[])}
+            {heading && (
+              <a href={`#${heading.id}`} className="anchor" aria-label={`Link to ${heading.text}`}>
+                #
+              </a>
+            )}
+          </Tag>
+        );
+      }
+
+      if (node.name === "pre") {
+        const code = node.children.find(
+          (c): c is Element => c instanceof Element && c.name === "code",
+        );
+        const lang = code?.attribs?.class?.match(/language-([\w-]+)/)?.[1];
+        return <CodeBlock language={lang} code={nodeText(code ?? node).replace(/\n$/, "")} />;
+      }
+
+      if (node.name === "table") {
+        return (
+          <div className="table-wrap">
+            <table>{domToReact(node.children as DOMNode[])}</table>
+          </div>
+        );
+      }
+
+      if (node.name === "img" && node.attribs.src) {
+        const { src, alt } = node.attribs;
+        const parentClass = (node.parent as Element | null)?.attribs?.class || "";
+        if (/kg-bookmark-thumb|kg-gallery/.test(parentClass)) {
+          // eslint-disable-next-line @next/next/no-img-element
+          return <img src={src} alt={alt || ""} loading="lazy" decoding="async" />;
+        }
+        return (
+          <figure>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt={alt || ""} loading="lazy" decoding="async" />
+            {alt && <figcaption>{alt}</figcaption>}
+          </figure>
+        );
+      }
+
+      if (node.name === "a" && /^https?:\/\//.test(node.attribs.href || "")) {
+        const { href } = node.attribs;
+        const internal = href.includes("aliffajriadi.my.id");
+        return (
+          <a {...attributesToProps(node.attribs)} {...(internal ? {} : { target: "_blank", rel: "noopener noreferrer" })}>
+            {domToReact(node.children as DOMNode[], { replace: undefined })}
+          </a>
+        );
+      }
+    },
+  });
+}
 
 export default function BlogContent({ blog }: { blog: Blog }) {
-  const { t } = useLanguage();
-  const [copied, setCopied] = useState(false);
+  const { t, lang } = useLanguage();
 
-  const { data: profile } = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
-  });
+  const title = t(blog.title_en, blog.title_id) || blog.title_en || blog.title_id;
+  const excerpt = t(blog.excerpt_en, blog.excerpt_id) || blog.excerpt_en || blog.excerpt_id;
+  const content = t(blog.content_en, blog.content_id) || blog.content_en || blog.content_id || "";
 
+  const headings = useMemo(() => extractHeadings(content), [content]);
+  const body = useMemo(() => renderArticle(content, headings), [content, headings]);
+  const minutes = readingMinutes(content);
+  const pct = useReadingProgress("article-body");
+
+  // click any image in the article to open the viewer
+  const [images, setImages] = useState<LightboxImage[]>([]);
+  const [lbIndex, setLbIndex] = useState<number | null>(null);
+  const onProseClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const img = (e.target as HTMLElement).closest("img");
+    if (!img || img.closest(".kg-bookmark")) return;
+    const all = Array.from(e.currentTarget.querySelectorAll("img")).filter((i) => !i.closest(".kg-bookmark"));
+    setImages(all.map((i) => ({ src: i.currentSrc || i.src, alt: i.alt })));
+    setLbIndex(all.indexOf(img));
+  };
+  const closeLb = useCallback(() => setLbIndex(null), []);
+
+  const { data: stats } = useBlogStats(blog.slug);
+  const { data: profile } = useQuery({ queryKey: ["profile"], queryFn: getProfile });
   const { data: allBlogs } = useQuery<Blog[]>({
-    queryKey: ["blogs"],
+    queryKey: ["blogs", "All", ""],
     queryFn: () => getBlogs(),
   });
 
-  const relatedBlogs = allBlogs
-    ?.filter((b) => (b.id && blog.id ? b.id !== blog.id : b.slug !== blog.slug))
-    .sort((a, b) => {
-      // Prioritize same category
-      if (a.category === blog.category && b.category !== blog.category)
-        return -1;
-      if (a.category !== blog.category && b.category === blog.category)
-        return 1;
-      return 0;
-    })
-    .slice(0, 3);
-
-  console.log(profile);
-
-  const content = t(blog.content_en, blog.content_id);
-  const title = t(blog.title_en, blog.title_id);
-  const excerpt = t(blog.excerpt_en, blog.excerpt_id);
-
-  const handleShare = async () => {
-    const shareData = {
-      title: title,
-      text: excerpt,
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.error("Error sharing:", err);
-      }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  // count a view once per browser session
+  useEffect(() => {
+    const key = `viewed:${blog.slug}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* private mode: count anyway */
     }
-  };
+    registerBlogView(blog.slug).catch(() => {});
+  }, [blog.slug]);
 
-  // SEO JSON-LD
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    headline: title,
-    image: blog.image ? [blog.image] : [],
-    datePublished: blog.date,
-    dateModified: blog.date,
-    author: [
-      {
-        "@type": "Person",
-        name: "Alif",
-        url: API_BASE_URL,
-      },
-    ],
-    description: excerpt,
-  };
+  const others = (allBlogs || []).filter((b) => b.slug !== blog.slug);
+  const related = [...others]
+    .sort((a, b) => Number(b.category === blog.category) - Number(a.category === blog.category))
+    .slice(0, 3);
+  const idx = (allBlogs || []).findIndex((b) => b.slug === blog.slug);
+  const newer = idx > 0 ? allBlogs![idx - 1] : undefined;
+  const older = idx >= 0 && idx < (allBlogs?.length ?? 0) - 1 ? allBlogs![idx + 1] : undefined;
+
+  const date = new Date(blog.date ?? 0);
+  const dateLabel = date.toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+  const tocTitle = t("On this page", "Di halaman ini");
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <article className="py-24 animate-in fade-in duration-700 selection:bg-primary selection:text-primary-foreground min-h-screen font-serif">
-        <div className="container-custom max-w-4xl">
-          <div className="flex justify-between items-center mb-16">
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all group"
-            >
-              <ChevronLeft
-                size={20}
-                className="transition-transform group-hover:-translate-x-1.5"
-              />{" "}
-              {t("Return to Archives", "Kembali ke Arsip")}
-            </Link>
+      <ReadingProgress pct={pct} />
 
-            <button
-              onClick={handleShare}
-              className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all group"
-            >
-              {copied ? (
-                <>
-                  <Check size={16} className="text-green-500" />
-                  <span className="text-green-500">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Share2
-                    size={16}
-                    className="transition-transform group-hover:scale-110"
-                  />
-                  <span>Share</span>
-                </>
-              )}
-            </button>
-          </div>
+      <article className="pb-24 pt-10 md:pt-16">
+        {/* ───────── header ───────── */}
+        <header className="container-custom">
+          <div className="mx-auto max-w-[860px]">
+            <nav aria-label="Breadcrumb" className="mb-8 flex items-center gap-2 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+              <Link href="/blog" className="inline-flex items-center gap-1.5 link-u hover:text-foreground">
+                <ArrowLeft size={12} /> {t("Writing", "Tulisan")}
+              </Link>
+              <span aria-hidden>/</span>
+              <span className="chip !py-0.5 !text-[color:var(--accent)]">{blog.category}</span>
+            </nav>
 
-          <header className="mb-20">
-            {/* Title First as requested */}
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-foreground mb-12 leading-tight tracking-tighter whitespace-pre-line wrap-break-word">
+            <h1 className="font-display text-[clamp(2.2rem,5.6vw,4.4rem)] leading-[1.02] tracking-[-0.04em]">
               {title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-8 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.25em] mb-12 font-sans">
-              <span className="flex items-center gap-2.5 text-primary bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 shadow-lg shadow-primary/5">
-                <Tag size={12} strokeWidth={3} /> {blog.category}
-              </span>
-              <span className="flex items-center gap-2.5">
-                <Calendar size={12} strokeWidth={3} />{" "}
-                {new Date(blog.date || new Date()).toLocaleDateString(
-                  undefined,
-                  {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  },
-                )}
-              </span>
-              <span className="flex items-center gap-2.5">
-                <Clock size={12} strokeWidth={3} />{" "}
-                {Math.ceil((content?.length || 0) / 200)} min read
-              </span>
-            </div>
-
-            <div className="relative p-10 bg-muted/30 rounded-5xl border border-border mb-20 group hover:border-primary/30 transition-all duration-500">
-              <div className="absolute top-0 left-10 -translate-y-1/2 bg-primary text-primary-foreground text-[8px] font-black px-4 py-1 rounded-full uppercase tracking-widest shadow-xl font-sans">
-                Abstract
-              </div>
-              <p className="text-sm md:text-base text-muted-foreground font-medium leading-relaxed italic">
-                &quot;{excerpt}&quot;
+            {excerpt && (
+              <p className="mt-6 max-w-[60ch] font-serif text-xl leading-relaxed text-muted-foreground md:text-2xl">
+                {excerpt}
               </p>
-            </div>
+            )}
 
-            {blog.image && (
-              <div className="relative aspect-video w-full rounded-3xl overflow-hidden mb-20 border border-border bg-muted shadow-3xl group">
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-border pt-4 text-sm">
+              <div className="flex items-center gap-3">
+                <span className="relative h-9 w-9 overflow-hidden rounded-full border border-border bg-muted">
+                  {profile?.imageUrl && (
+                    <Image src={profile.imageUrl} alt="" fill sizes="36px" className="object-cover" />
+                  )}
+                </span>
+                <span className="font-medium">{profile?.name || SITE.name}</span>
+              </div>
+              <time dateTime={date.toISOString()} className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Calendar size={14} /> {dateLabel}
+              </time>
+              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                <Clock size={14} /> {minutes} {t("min read", "menit baca")}
+              </span>
+              {typeof stats?.views === "number" && (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                  <Eye size={14} /> {stats.views.toLocaleString(lang === "id" ? "id-ID" : "en-US")}
+                </span>
+              )}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
+              <ListenButton
+                title={title}
+                html={content}
+                lang={lang}
+                labels={{
+                  listen: t("Listen", "Dengarkan"),
+                  pause: t("Pause", "Jeda"),
+                  resume: t("Resume", "Lanjut"),
+                  stop: t("Stop", "Berhenti"),
+                }}
+              />
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <BookmarkButton slug={blog.slug} className="h-10 w-10 rounded-full hover:bg-muted hover:text-foreground" />
+                <button
+                  onClick={() => window.print()}
+                  className="hidden h-10 rounded-full px-3 text-xs hover:bg-muted hover:text-foreground sm:block"
+                >
+                  {t("Print", "Cetak")}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {blog.image && (
+            <div className="mx-auto mt-8 max-w-[860px]">
+              <div className="relative aspect-[21/9] overflow-hidden rounded-2xl border border-border bg-muted">
                 <Image
                   src={blog.image}
                   alt={title}
                   fill
-                  className="object-cover transition-transform duration-1000 group-hover:scale-105"
                   priority
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-background/20 to-transparent" />
-              </div>
-            )}
-          </header>
-
-          <div className="tiptap-content text-foreground">
-            {parse(content || "")}
-          </div>
-
-          <div className="mt-40 pt-20 border-t border-border flex flex-col items-center text-center group">
-            {profile?.imageUrl && (
-              <div className="relative w-32 h-32 mb-10">
-                <Image
-                  src={profile.imageUrl}
-                  alt="Alif"
-                  fill
-                  className="object-cover rounded-full transition-transform duration-1000 group-hover:scale-105"
-                  priority
+                  sizes="(min-width:900px) 860px, 100vw"
+                  className="object-cover"
                 />
               </div>
-            )}
-            <h4 className="text-2xl font-extrabold text-foreground mb-4 tracking-tighter">
-              {t(
-                `Article by ${profile?.name}`,
-                `Artikel oleh ${profile?.name}`,
-              )}
-            </h4>
-            <p className="text-muted-foreground max-w-md font-medium text-lg leading-relaxed">
-              {t(profile?.tagline_en, profile?.tagline_id)}
-            </p>
-            <div className="flex gap-4 mt-4">
-              <Link href={profile?.instagram || "#"} target="_blank">
-                <InstagramIcon size={24} />
-              </Link>
-              <Link href={profile?.linkedin || "#"} target="_blank">
-                <LinkedinIcon size={24} />
-              </Link>
             </div>
+          )}
+        </header>
+
+        {/* ───────── body ───────── */}
+        <div className="container-custom mt-12 md:mt-16">
+          <div className="mx-auto grid max-w-[1120px] gap-x-12 lg:grid-cols-[48px_minmax(0,720px)] lg:justify-center xl:grid-cols-[48px_minmax(0,720px)_240px]">
+            {/* left action rail */}
+            <aside className="hidden lg:block">
+              <div className="sticky top-32 flex flex-col items-center gap-9">
+                <LikeButton slug={blog.slug} variant="rail" />
+                <div className="h-4" />
+                <BookmarkButton slug={blog.slug} className="h-12 w-12 rounded-full border border-border bg-card hover:border-[var(--ink)]" />
+                <ShareButtons title={title} text={excerpt} vertical />
+              </div>
+            </aside>
+
+            <div id="article-body" className="min-w-0">
+              <TableOfContents headings={headings} title={tocTitle} variant="inline" />
+
+              <div className="article-prose" onClick={onProseClick}>
+                {body}
+              </div>
+
+              {/* end-of-article */}
+              <div className="mt-16 rounded-3xl border border-border bg-muted/50 p-6 md:p-8">
+                <p className="font-display text-2xl md:text-3xl">
+                  {t("Did this help you?", "Artikel ini membantu?")}{" "}
+                  <span className="font-accent text-[color:var(--accent)]">
+                    {t("Say thanks.", "Beri apresiasi.")}
+                  </span>
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-between gap-5">
+                  <LikeButton slug={blog.slug} variant="pill" label={t("Like", "Suka")} />
+                  <ShareButtons title={title} text={excerpt} />
+                </div>
+              </div>
+
+              {/* author */}
+              <div className="mt-10 flex items-start gap-5 border-t border-border pt-10">
+                <span className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border border-border bg-muted">
+                  {profile?.imageUrl && (
+                    <Image src={profile.imageUrl} alt={profile?.name || "Author"} fill sizes="64px" className="object-cover" />
+                  )}
+                </span>
+                <div>
+                  <div className="eyebrow mb-1">{t("Written by", "Ditulis oleh")}</div>
+                  <p className="font-display text-xl">{profile?.name || SITE.name}</p>
+                  <p className="mt-1 max-w-[46ch] text-sm text-muted-foreground">
+                    {t(profile?.tagline_en, profile?.tagline_id)}
+                  </p>
+                  <Link href="/#contact" className="mt-3 inline-flex items-center gap-1 text-sm font-medium link-u">
+                    {t("Work with me", "Bekerja sama")} <ArrowUpRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* right TOC */}
+            <aside className="hidden xl:block">
+              <TableOfContents headings={headings} title={tocTitle} variant="sidebar" />
+            </aside>
           </div>
         </div>
 
-        {relatedBlogs && relatedBlogs.length > 0 && (
-          <div className="container-custom mt-40 pt-20 border-t border-border/50">
-            <div className="flex items-center justify-between pt-10 mb-12">
-              <h3 className="text-3xl font-extrabold text-foreground tracking-tighter">
-                {t("Continue Reading", "Artikel Terkait")}
-              </h3>
-              <Link
-                href="/blog"
-                className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition-all"
-              >
-                {t("View Archive", "Lihat Arsip")} →
+        {/* ───────── prev / next ───────── */}
+        {(newer || older) && (
+          <nav aria-label="Article navigation" className="container-custom mt-20">
+            <div className="mx-auto grid max-w-[1120px] gap-4 md:grid-cols-2">
+              {[
+                { post: newer, dir: "prev" as const },
+                { post: older, dir: "next" as const },
+              ].map(({ post, dir }) =>
+                post ? (
+                  <Link
+                    key={dir}
+                    href={`/blog/${post.slug}`}
+                    className={`group rounded-2xl border border-border p-6 transition-colors hover:border-[var(--ink)] ${
+                      dir === "next" ? "md:text-right" : ""
+                    }`}
+                  >
+                    <span
+                      className={`eyebrow mb-3 flex ${dir === "next" ? "md:justify-end" : ""}`}
+                    >
+                      {dir === "prev" ? (
+                        <>
+                          <ArrowLeft size={13} /> {t("Newer", "Lebih baru")}
+                        </>
+                      ) : (
+                        <>
+                          {t("Older", "Lebih lama")} <ArrowRight size={13} />
+                        </>
+                      )}
+                    </span>
+                    <span className="font-display text-xl leading-snug group-hover:text-[color:var(--accent)] md:text-2xl">
+                      {t(post.title_en, post.title_id)}
+                    </span>
+                  </Link>
+                ) : (
+                  <div key={dir} />
+                ),
+              )}
+            </div>
+          </nav>
+        )}
+
+        {/* ───────── related ───────── */}
+        {related.length > 0 && (
+          <section className="container-custom mt-24 border-t border-border pt-16" aria-labelledby="related-h">
+            <div className="mb-10 flex items-end justify-between">
+              <h2 id="related-h" className="font-display text-3xl md:text-5xl">
+                {t("Keep", "Lanjut")}{" "}
+                <span className="font-accent text-[color:var(--accent)]">{t("reading.", "membaca.")}</span>
+              </h2>
+              <Link href="/blog" className="hidden text-sm font-medium link-u sm:inline-flex">
+                {t("All articles", "Semua artikel")} →
               </Link>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {relatedBlogs.map((relatedPost) => (
-                <Link
-                  key={relatedPost.id || relatedPost.slug}
-                  href={`/blog/${relatedPost.slug}`}
-                  className="group"
-                >
-                  <div className="relative aspect-video rounded-2xl overflow-hidden mb-4 border border-border bg-muted">
-                    {relatedPost.image && (
-                      <Image
-                        src={relatedPost.image}
-                        alt={t(relatedPost.title_en, relatedPost.title_id)}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">
-                      {relatedPost.category}
-                    </div>
-                    <h4 className="text-lg font-black text-foreground group-hover:text-primary transition-colors leading-tight uppercase tracking-tight line-clamp-2">
-                      {t(relatedPost.title_en, relatedPost.title_id)}
-                    </h4>
-                    <p className="text-xs text-muted-foreground line-clamp-2 font-medium">
-                      {t(relatedPost.excerpt_en, relatedPost.excerpt_id)}
-                    </p>
-                  </div>
-                </Link>
+            <div className="grid gap-x-8 gap-y-12 md:grid-cols-3">
+              {related.map((p) => (
+                <PostCard key={p.id || p.slug} post={p} />
               ))}
             </div>
-          </div>
+          </section>
         )}
       </article>
 
-      <style jsx global>{`
-        /* Typography System */
-        .tiptap-content h2,
-        .tiptap-content h3,
-        article h1 {
-          font-family: var(--font-lora), serif;
-        }
-        .tiptap-content h2 {
-          font-size: 2rem;
-          font-weight: 800;
-          line-height: 1.2;
-          margin-top: 6rem;
-          margin-bottom: 2rem;
-          letter-spacing: -0.05em;
-          color: var(--foreground);
-        }
-        .tiptap-content h3 {
-          font-size: 1.5rem;
-          font-weight: 800;
-          line-height: 1.1;
-          margin-top: 4rem;
-          margin-bottom: 1.5rem;
-          letter-spacing: -0.03em;
-          color: var(--foreground);
-        }
-        .tiptap-content p {
-          font-family: var(--font-lora), serif;
-          font-size: 1.1rem;
-          line-height: 1.8;
-          margin-bottom: 2rem;
-          color: var(--foreground);
-          font-weight: 400;
-        }
-
-        /* Lists */
-        .tiptap-content ul,
-        .tiptap-content ol {
-          font-family: var(--font-lora), serif;
-          margin: 2rem 0;
-          padding-left: 2rem;
-          color: var(--foreground);
-          font-size: 1.1rem;
-          line-height: 1.8;
-        }
-        .tiptap-content ul {
-          list-style-type: disc;
-        }
-        .tiptap-content ol {
-          list-style-type: decimal;
-        }
-        .tiptap-content li {
-          margin-bottom: 0.75rem;
-        }
-
-        /* Tables */
-        .tiptap-content table {
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-          margin: 3rem 0;
-          border-radius: 1.5rem;
-          overflow: hidden;
-          border: 1px solid var(--border);
-          font-size: 1rem;
-        }
-        .tiptap-content th,
-        .tiptap-content td {
-          padding: 1rem;
-          border-bottom: 1px solid var(--border);
-          text-align: left;
-        }
-        .tiptap-content th {
-          background-color: var(--muted);
-          font-weight: 900;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-size: 0.85rem;
-          color: var(--foreground);
-        }
-        .tiptap-content tr:last-child td {
-          border-bottom: none;
-        }
-        .tiptap-content tr:hover td {
-          background-color: var(--muted);
-          transition: background-color 0.2s;
-        }
-
-        /* Quotes & Code */
-        .tiptap-content blockquote {
-          border-left: 6px solid var(--primary);
-          padding: 2.5rem;
-          background: var(--muted);
-          border-radius: 0 2rem 2rem 0;
-          margin: 3rem 0;
-          font-size: 1.2rem;
-          font-weight: 900;
-          line-height: 1.2;
-          color: var(--foreground);
-          font-style: italic;
-        }
-        .tiptap-content pre {
-          background: #0f172a; /* Slate 950 */
-          color: #f8fafc;
-          padding: 2rem;
-          border-radius: 2rem;
-          margin: 3rem 0;
-          overflow-x: auto;
-          font-family: monospace;
-          font-size: 0.95rem;
-          line-height: 1.6;
-        }
-
-        /* Images */
-        .tiptap-content img {
-          border-radius: 2rem;
-          margin: 4rem 0;
-          width: 100%;
-          height: auto;
-          box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Links */
-        .tiptap-content a {
-          color: var(--primary);
-          text-decoration: underline;
-          text-underline-offset: 6px;
-          text-decoration-thickness: 2px;
-          font-weight: 700;
-          transition: opacity 0.2s;
-        }
-        .tiptap-content a:hover {
-          opacity: 0.8;
-        }
-
-        .tiptap-content hr {
-          border: none;
-          border-top: 1px solid var(--border);
-          margin: 4rem auto;
-          width: 50%;
-        }
-
-        @media (max-width: 768px) {
-          .tiptap-content h2 {
-            font-size: 2rem;
-          }
-          .tiptap-content p {
-            font-size: 1.15rem;
-          }
-          .tiptap-content blockquote {
-            font-size: 1.5rem;
-            padding: 1.5rem;
-          }
-        }
-      `}</style>
+      <FloatingActions
+        slug={blog.slug}
+        title={title}
+        text={excerpt}
+        pct={pct}
+        minutes={minutes}
+        minLeftLabel={t("min left", "mnt lagi")}
+      />
+      <SelectionToolbar containerSelector=".article-prose" title={title} />
+      <Lightbox images={images} index={lbIndex} onClose={closeLb} onIndex={setLbIndex} />
     </>
   );
 }

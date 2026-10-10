@@ -5,7 +5,7 @@ import { Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -13,24 +13,16 @@ export default function ThemeToggle() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="p-2 w-9 h-9" />;
+  if (!mounted) return <div className="w-9 h-9" />;
 
+  const dark = resolvedTheme === "dark";
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-full transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
-      style={{
-        background: "var(--muted)",
-        border: "1px solid var(--border-outline)",
-        color: "var(--color-text-nav)",
-      }}
-      aria-label="Toggle Theme"
+      onClick={() => setTheme(dark ? "light" : "dark")}
+      className="flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card hover:border-[var(--ink)] transition-colors active:scale-95"
+      aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
     >
-      {theme === "dark" ? (
-        <Sun size={16} style={{ color: "var(--color-accent-italic)" }} />
-      ) : (
-        <Moon size={16} style={{ color: "var(--color-primary)" }} />
-      )}
+      {dark ? <Sun size={15} /> : <Moon size={15} />}
     </button>
   );
 }

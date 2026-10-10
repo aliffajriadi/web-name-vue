@@ -30,6 +30,9 @@ export interface Profile {
   tagline_en?: string;
   tagline_id?: string;
   imageUrl?: string;
+  github?: string;
+  linkedin?: string;
+  twitter?: string;
   [key: string]: unknown;
 }
 
@@ -58,7 +61,16 @@ export interface Blog {
   excerpt_id: string;
   image?: string;
   category: string;
-  date?: string | Date; // Added date field
+  date?: string | Date;
+  updatedAt?: string;
+  views?: number;
+  likesCount?: number;
+}
+
+export interface BlogStats {
+  views: number;
+  likesCount: number;
+  isLiked: boolean;
 }
 
 export interface Experience {
@@ -97,10 +109,6 @@ export interface GalleryComment {
   };
 }
 
-// ... (keep intervening code)
-
-// ... (keep intervening code)
-
 export interface Skill {
   id?: string;
   name: string;
@@ -129,6 +137,14 @@ export const getBlogs = (params?: { category?: string; search?: string }) =>
   api.get("/blogs", { params }).then((res) => res.data);
 export const getBlogBySlug = (slug: string) =>
   api.get(`/blogs/${slug}`).then((res) => res.data);
+export const getBlogStats = (slug: string): Promise<BlogStats> =>
+  api.get(`/blogs/${slug}/stats`).then((res) => res.data);
+export const registerBlogView = (slug: string) =>
+  api.post(`/blogs/${slug}/view`).then((res) => res.data);
+export const toggleBlogLike = (
+  slug: string,
+): Promise<{ liked: boolean; likesCount: number }> =>
+  api.post(`/blogs/${slug}/like`).then((res) => res.data);
 export const getBlogCategories = () =>
   api.get("/blogs/categories").then((res) => res.data);
 export const createBlog = (data: Omit<Blog, "id">) =>
@@ -137,6 +153,17 @@ export const updateBlog = (id: string, data: Partial<Blog>) =>
   api.put(`/blogs/${id}`, data).then((res) => res.data);
 export const deleteBlog = (id: string) =>
   api.delete(`/blogs/${id}`).then((res) => res.data);
+
+// --- Link preview (admin editor) ---
+export interface LinkPreview {
+  url: string;
+  title: string;
+  description: string;
+  image: string;
+  publisher: string;
+}
+export const unfurlUrl = (url: string): Promise<LinkPreview> =>
+  api.get("/unfurl", { params: { url } }).then((res) => res.data);
 
 // --- Experiences ---
 export const getExperiences = () =>

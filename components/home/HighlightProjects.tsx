@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { getProjects, Project } from "@/lib/api";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { getProjects, Project } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
+import SectionHead from "@/components/SectionHead";
+import Reveal from "@/components/Reveal";
 
 export default function HighlightProjects() {
   const { t } = useLanguage();
@@ -14,149 +16,88 @@ export default function HighlightProjects() {
     queryFn: getProjects,
   });
 
-  const featured = projects?.filter((p: Project) => p.isFeatured).slice(0, 3);
-
-  if (isLoading)
-    return (
-      <div
-        className="py-20 text-center text-xs uppercase tracking-[0.25em] animate-pulse"
-        style={{ color: "var(--color-text-body)" }}
-      >
-        {t("Loading projects...", "Memuat proyek...")}
-      </div>
-    );
+  const featured = (projects?.filter((p) => p.isFeatured).length
+    ? projects.filter((p) => p.isFeatured)
+    : projects
+  )?.slice(0, 4);
 
   return (
-    <section
-      className="py-20 md:py-28"
-      style={{ borderTop: "1px solid var(--border-outline)", background: "var(--muted)" }}
-    >
+    <section className="section rule-top bg-muted/40">
       <div className="container-custom">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-14 gap-4">
-          <div>
-            <div className="eyebrow-label mb-5" style={{ justifyContent: "flex-start" }}>
-              {t("Selected Work", "Karya Terpilih")}
-            </div>
-            <h2
-              className="text-3xl md:text-4xl font-bold leading-tight"
-              style={{
-                fontFamily: "var(--font-playfair), 'Playfair Display', serif",
-                color: "var(--color-primary-dark)",
-              }}
-            >
-              {t("Featured", "Proyek")}
-              <br />
-              <em style={{ color: "var(--color-accent-italic)" }}>
-                {t("Projects", "Unggulan")}
-              </em>
-            </h2>
-          </div>
-          <Link
-            href="/projects"
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors group"
-            style={{ color: "var(--color-primary)" }}
-          >
-            {t("View All", "Lihat Semua")}
-            <ArrowUpRight
-              size={15}
-              className="transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
-            />
-          </Link>
-        </div>
+        <SectionHead
+          index="02"
+          label={t("Selected work", "Karya terpilih")}
+          aside={
+            <Link href="/projects" className="btn-outline self-start md:self-end">
+              {t("All projects", "Semua proyek")} <ArrowUpRight size={16} />
+            </Link>
+          }
+        >
+          {t("Things I've", "Hal-hal yang")}{" "}
+          <span className="font-accent text-[color:var(--accent)]">{t("built.", "kubuat.")}</span>
+        </SectionHead>
 
-        {/* Project cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featured?.map((project: Project) => (
-            <div
-              key={project.id}
-              className="group flex flex-col overflow-hidden transition-all duration-400 hover:-translate-y-1"
-              style={{
-                background: "var(--card)",
-                border: "1px solid var(--border-outline)",
-                borderRadius: "1.5rem",
-              }}
-            >
-              {project.image && (
-                <div className="relative aspect-[16/10] w-full overflow-hidden">
-                  <Image
-                    src={project.image}
-                    alt={t(project.title_en, project.title_id)}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                  {/* Category badge */}
-                  <div className="absolute top-4 left-4">
-                    <span
-                      className="px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest backdrop-blur-md"
-                      style={{
-                        background: "rgba(242,248,241,0.9)",
-                        color: "var(--color-primary)",
-                        border: "1px solid var(--border-outline)",
-                      }}
-                    >
-                      {project.type}
+        {isLoading && (
+          <div className="grid gap-6 md:grid-cols-2">
+            {[0, 1].map((i) => (
+              <div key={i} className="aspect-[16/11] animate-pulse rounded-3xl bg-muted" />
+            ))}
+          </div>
+        )}
+
+        <div className="grid gap-x-6 gap-y-14 md:grid-cols-2">
+          {featured?.map((p, i) => {
+            const href = p.demoUrl || p.githubUrl || "/projects";
+            const external = href.startsWith("http");
+            return (
+              <Reveal key={p.id} delay={(i % 2) * 0.08} className={i % 2 === 1 ? "md:mt-20" : ""}>
+                <Link
+                  href={href}
+                  target={external ? "_blank" : undefined}
+                  rel={external ? "noopener noreferrer" : undefined}
+                  className="group block"
+                >
+                  <div className="relative aspect-[16/11] overflow-hidden rounded-3xl border border-border bg-card">
+                    {p.image && (
+                      <Image
+                        src={p.image}
+                        alt={t(p.title_en, p.title_id)}
+                        fill
+                        sizes="(min-width:768px) 560px, 100vw"
+                        className="object-cover transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]"
+                      />
+                    )}
+                    <span className="chip absolute left-4 top-4 !bg-background/85 backdrop-blur">
+                      {p.type}
+                    </span>
+                    <span className="absolute bottom-4 right-4 grid h-12 w-12 translate-y-2 place-items-center rounded-full bg-[var(--lime)] text-[color:var(--lime-ink)] opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                      <ArrowUpRight size={20} />
                     </span>
                   </div>
-                </div>
-              )}
-
-              <div className="p-7 flex flex-col flex-grow">
-                <h3
-                  className="text-xl font-bold mb-3 leading-snug transition-colors duration-200 group-hover:text-[var(--color-primary)]"
-                  style={{
-                    fontFamily: "var(--font-playfair), serif",
-                    color: "var(--color-primary-dark)",
-                  }}
-                >
-                  {t(project.title_en, project.title_id)}
-                </h3>
-                <p
-                  className="text-sm mb-6 flex-grow leading-relaxed line-clamp-3"
-                  style={{ color: "var(--color-text-body)" }}
-                >
-                  {t(project.description_en, project.description_id)}
-                </p>
-
-                {/* Tech stack pills */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {project.techStack.split(",").map(
-                    (tech: string, i: number) =>
-                      i < 4 && (
-                        <span
-                          key={tech}
-                          className="text-[10px] font-medium px-3 py-1 rounded-full"
-                          style={{
-                            background: "var(--muted)",
-                            color: "var(--color-text-body)",
-                            border: "1px solid var(--border-outline)",
-                          }}
-                        >
-                          {tech.trim()}
-                        </span>
-                      ),
-                  )}
-                </div>
-
-                {/* CTA link */}
-                <Link
-                  href={project.demoUrl || project.githubUrl || "/projects"}
-                  target="_blank"
-                  className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] pt-5 transition-colors group/link"
-                  style={{
-                    borderTop: "1px solid var(--border-outline)",
-                    color: "var(--color-primary)",
-                  }}
-                >
-                  {t("View Project", "Lihat Proyek")}
-                  <ArrowUpRight
-                    size={14}
-                    className="transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5"
-                  />
+                  <div className="mt-5 flex items-baseline gap-4">
+                    <span className="font-mono text-xs text-[color:var(--accent)]">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <div>
+                      <h3 className="font-display text-2xl md:text-3xl">
+                        {t(p.title_en, p.title_id)}
+                      </h3>
+                      <p className="mt-2 max-w-[48ch] text-sm text-muted-foreground line-clamp-2">
+                        {t(p.description_en, p.description_id)}
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {p.techStack.split(",").slice(0, 4).map((tech) => (
+                          <span key={tech} className="chip">
+                            {tech.trim()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </Link>
-              </div>
-            </div>
-          ))}
+              </Reveal>
+            );
+          })}
         </div>
       </div>
     </section>

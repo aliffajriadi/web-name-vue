@@ -97,7 +97,7 @@ export default function GalleryPage() {
         {/* Profile Header */}
         <header className="flex flex-col md:flex-row items-center md:items-start gap-8 md:gap-12 mb-12 px-4">
           <div className="relative group shrink-0">
-            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full p-[2px] bg-linear-to-tr from-yellow-400 via-red-500 to-purple-600">
+            <div className="w-24 h-24 md:w-40 md:h-40 rounded-full p-[2px] bg-[var(--lime)]">
               <div className="w-full h-full rounded-full border-4 border-background overflow-hidden relative bg-muted">
                 <Image
                   src={profile?.imageUrl || "/profile.png"}
@@ -115,14 +115,6 @@ export default function GalleryPage() {
               <h1 className="text-xl md:text-2xl font-semibold">
                 {profile?.name || "User"}
               </h1>
-              <div className="flex gap-2">
-                <button className="px-4 py-1.5 bg-muted hover:bg-muted/80 font-semibold text-sm rounded-lg transition-colors">
-                  {t("Follow", "Ikuti")}
-                </button>
-                <button className="px-4 py-1.5 bg-muted hover:bg-muted/80 font-semibold text-sm rounded-lg transition-colors">
-                  {t("Message", "Pesan")}
-                </button>
-              </div>
             </div>
 
             <div className="flex items-center gap-8 md:gap-12 text-sm md:text-base">
@@ -130,18 +122,6 @@ export default function GalleryPage() {
                 <span className="font-bold text-foreground">{postCount}</span>
                 <span className="text-muted-foreground">
                   {t("posts", "postingan")}
-                </span>
-              </div>
-              <div className="flex flex-col md:flex-row items-center md:gap-1">
-                <span className="font-bold text-foreground">1.2M</span>
-                <span className="text-muted-foreground">
-                  {t("followers", "pengikut")}
-                </span>
-              </div>
-              <div className="flex flex-col md:flex-row items-center md:gap-1">
-                <span className="font-bold text-foreground">487</span>
-                <span className="text-muted-foreground">
-                  {t("following", "mengikuti")}
                 </span>
               </div>
             </div>
@@ -165,35 +145,6 @@ export default function GalleryPage() {
             </div>
           </div>
         </header>
-
-        {/* Highlights (Mock) */}
-        <div className="flex gap-4 md:gap-8 overflow-x-auto pb-8 mb-4 px-4 scrollbar-hide">
-          {[
-            { id: 1, label: "Code", color: "bg-blue-100" },
-            { id: 2, label: "Travel", color: "bg-green-100" },
-            { id: 3, label: "Life", color: "bg-yellow-100" },
-            { id: 4, label: "Setup", color: "bg-purple-100" },
-          ].map((highlight) => (
-            <div
-              key={highlight.id}
-              className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group"
-            >
-              <div className="w-16 h-16 rounded-full p-[2px] border border-border bg-background group-hover:scale-105 transition-transform duration-300">
-                <div
-                  className={cn(
-                    "w-full h-full rounded-full flex items-center justify-center border-2 border-background",
-                    highlight.color,
-                  )}
-                >
-                  <span className="text-xs font-bold opacity-50 dark:text-black">
-                    ✦
-                  </span>
-                </div>
-              </div>
-              <span className="text-xs font-medium">{highlight.label}</span>
-            </div>
-          ))}
-        </div>
 
         {/* Tabs */}
         <div className="border-t border-border mb-8">

@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import { ImageKitProvider, IKUpload } from "imagekitio-next";
 import { API_BASE_URL } from "@/lib/api";
 import { Upload, X, Loader2, CheckCircle2 } from "lucide-react";
+import { useToast } from "@/components/admin/ui";
 import Image from "next/image";
 
 const publicKey = "public_eCQf3j533fEHqgIkNhMjXChRUf4=";
@@ -51,15 +52,15 @@ export default function ImageUploadField({
 }: ImageUploadFieldProps) {
   const ikUploadRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const toast = useToast();
 
   const onError = (err: { message: string }) => {
     console.error("Error", err);
     setUploading(false);
-    alert("Upload failed: " + err.message);
+    toast("error", "Upload failed: " + err.message);
   };
 
   const onSuccess = (res: IKUploadResponse) => {
-    console.log("Success", res);
     setUploading(false);
     onChange(res.url);
   };
@@ -74,8 +75,8 @@ export default function ImageUploadField({
       urlEndpoint={urlEndpoint}
       authenticator={authenticator}
     >
-      <div className="space-y-1">
-        <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1 flex justify-between">
+      <div className="space-y-1.5">
+        <div className="text-[13px] font-medium flex justify-between">
           <span>{label}</span>
           {value && (
             <button
@@ -86,7 +87,7 @@ export default function ImageUploadField({
               <X size={10} /> Clear
             </button>
           )}
-        </label>
+        </div>
 
         <div className="relative group">
           <input
@@ -94,7 +95,7 @@ export default function ImageUploadField({
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
             placeholder="Image URL or Upload -->"
-            className="admin-input-premium pr-12"
+            className="field-input pr-12"
           />
 
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
@@ -126,7 +127,11 @@ export default function ImageUploadField({
         {value && (
           <div className="mt-2 relative aspect-video w-full rounded-xl overflow-hidden border border-border bg-muted">
             <Image
-              src={`${value}?tr=w-400,h-225,fo-auto`}
+              src={
+                value.includes("ik.imagekit.io")
+                  ? `${value}?tr=w-400,h-225,fo-auto`
+                  : value
+              }
               alt="Preview"
               fill
               className="object-cover"

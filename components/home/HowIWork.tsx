@@ -1,94 +1,68 @@
-const steps = [
-  {
-    num: "01",
-    title: "Understand the Problem",
-    description:
-      'I start by diving deep into the "why" before looking at the "how". Understanding the business goals and user needs is the foundation.',
-  },
-  {
-    num: "02",
-    title: "Clean Architecture",
-    description:
-      "I write code that is modular, testable, and well-documented. Technical debt is a choice — I choose to avoid it.",
-  },
-  {
-    num: "03",
-    title: "Iterative Development",
-    description:
-      "I prefer building MVPs quickly and iterating based on real feedback rather than chasing theoretical perfection.",
-  },
-  {
-    num: "04",
-    title: "Honest Communication",
-    description:
-      "Transparent updates and realistic timelines. I value trust and clarity over over-promising.",
-  },
-];
+"use client";
+
+import { useLanguage } from "@/context/LanguageContext";
+import Reveal from "@/components/Reveal";
 
 export default function HowIWork() {
-  return (
-    <section
-      className="py-20 md:py-28"
-      style={{ borderTop: "1px solid var(--border-outline)" }}
-    >
-      <div className="container-custom">
-        {/* Eyebrow + heading */}
-        <div className="eyebrow-label mb-5" style={{ justifyContent: "flex-start" }}>
-          My Process
-        </div>
-        <h2
-          className="text-3xl md:text-4xl font-bold mb-4 leading-tight"
-          style={{
-            fontFamily: "var(--font-playfair), 'Playfair Display', serif",
-            color: "var(--color-primary-dark)",
-          }}
-        >
-          How I
-          <br />
-          <em style={{ color: "var(--color-accent-italic)" }}>Work</em>
-        </h2>
-        <p
-          className="mb-14 max-w-md text-base leading-relaxed"
-          style={{ color: "var(--color-text-body)" }}
-        >
-          My approach to professional engineering and thoughtful collaboration.
-        </p>
+  const { t } = useLanguage();
+  const steps = [
+    {
+      title: t("Understand the problem", "Pahami masalahnya"),
+      body: t(
+        'I start with the "why" before the "how". Business goals and real user needs are the foundation everything else stands on.',
+        'Saya mulai dari "mengapa" sebelum "bagaimana". Tujuan bisnis dan kebutuhan pengguna yang nyata adalah fondasi dari semuanya.',
+      ),
+    },
+    {
+      title: t("Clean architecture", "Arsitektur yang bersih"),
+      body: t(
+        "Modular, testable, documented. Technical debt is a choice — I choose to avoid it.",
+        "Modular, teruji, terdokumentasi. Technical debt adalah pilihan — saya memilih menghindarinya.",
+      ),
+    },
+    {
+      title: t("Iterate in the open", "Iterasi secara terbuka"),
+      body: t(
+        "Ship a small version fast, learn from real feedback, then improve — instead of chasing theoretical perfection.",
+        "Rilis versi kecil dengan cepat, belajar dari umpan balik nyata, lalu perbaiki — bukan mengejar kesempurnaan teoretis.",
+      ),
+    },
+    {
+      title: t("Honest communication", "Komunikasi jujur"),
+      body: t(
+        "Transparent updates and realistic timelines. Trust and clarity over over-promising.",
+        "Kabar yang transparan dan tenggat yang realistis. Kepercayaan dan kejelasan di atas janji berlebihan.",
+      ),
+    },
+  ];
 
-        {/* Steps grid */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {steps.map((step) => (
-            <div
-              key={step.num}
-              className="p-7 rounded-2xl transition-all duration-300 hover:-translate-y-0.5"
-              style={{
-                background: "var(--card)",
-                border: "1px solid var(--border-outline)",
-              }}
-            >
-              <div
-                className="text-xs font-semibold tracking-[0.2em] mb-4"
-                style={{ color: "var(--color-primary)", fontFamily: "var(--font-jakarta), monospace" }}
-              >
-                {step.num}
-              </div>
-              <h3
-                className="text-xl font-bold mb-3"
-                style={{
-                  fontFamily: "var(--font-playfair), serif",
-                  color: "var(--color-primary-dark)",
-                }}
-              >
-                {step.title}
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{ color: "var(--color-text-body)" }}
-              >
-                {step.description}
-              </p>
-            </div>
-          ))}
+  return (
+    <section className="section rule-top bg-muted/40">
+      <div className="container-custom grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-20">
+        <div className="lg:sticky lg:top-28 lg:self-start">
+          <div className="eyebrow mb-5">
+            <span className="idx">(06)</span> {t("Process", "Proses")}
+          </div>
+          <h2 className="font-display text-4xl md:text-6xl">
+            {t("How I", "Cara saya")}{" "}
+            <span className="font-accent text-[color:var(--accent)]">{t("work.", "bekerja.")}</span>
+          </h2>
         </div>
+        <ol>
+          {steps.map((s, i) => (
+            <Reveal as="li" key={s.title} delay={i * 0.06}>
+              <div className="grid grid-cols-[3rem_1fr] gap-4 border-t border-border py-8 first:border-t-0 first:pt-0">
+                <span className="font-mono text-sm text-[color:var(--accent)]">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3 className="font-display text-2xl md:text-3xl">{s.title}</h3>
+                  <p className="mt-3 max-w-[52ch] text-muted-foreground">{s.body}</p>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </ol>
       </div>
     </section>
   );

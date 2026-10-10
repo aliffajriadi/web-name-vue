@@ -2,59 +2,57 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Briefcase, FileText, Camera } from "lucide-react";
+import { Home, Briefcase, PenLine, Camera } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/context/LanguageContext";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import { motion } from "framer-motion";
 
 export default function MobileNav() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const scrollDirection = useScrollDirection();
-  const isVisible = scrollDirection !== "down";
 
   const navItems = [
     { name: t("Home", "Beranda"), path: "/", icon: Home },
     { name: t("Work", "Proyek"), path: "/projects", icon: Briefcase },
-    { name: t("Life", "Galeri"), path: "/gallery", icon: Camera },
-    { name: t("Blog", "Blog"), path: "/blog", icon: FileText },
+    { name: t("Writing", "Tulisan"), path: "/blog", icon: PenLine },
+    { name: t("Gallery", "Galeri"), path: "/gallery", icon: Camera },
   ];
 
+  if (pathname.startsWith("/admin")) return null;
+
   return (
-    <motion.div
-      initial={{ y: 0 }}
-      animate={{ y: isVisible ? 0 : "100%" }}
-      transition={{ duration: 0.3, ease: "easeInOut" }}
-      className={cn("fixed bottom-0 left-0 right-0 z-50 md:hidden backdrop-blur-xl px-8 py-4 pb-8 flex justify-between items-center")}
-      style={{
-        background: "rgba(242, 248, 241, 0.92)",
-        borderTop: "1px solid var(--border-outline)",
-      }}
+    <motion.nav
+      aria-label="Mobile"
+      animate={{ y: scrollDirection === "down" ? "140%" : 0 }}
+      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed bottom-4 left-1/2 z-50 -translate-x-1/2 md:hidden"
     >
-      {navItems.map((item) => {
-        const isActive = pathname === item.path;
-        return (
-          <Link
-            key={item.path}
-            href={item.path}
-            className={cn(
-              "flex flex-col items-center gap-1.5 transition-all duration-300",
-            )}
-            style={{
-              color: isActive ? "var(--color-primary)" : "var(--color-text-body)",
-              transform: isActive ? "scale(1.1)" : "scale(1)",
-            }}
-          >
-            <item.icon size={22} strokeWidth={isActive ? 2 : 1.5} />
-            <span
-              className="text-[10px] font-medium uppercase tracking-[0.15em]"
-            >
-              {item.name}
-            </span>
-          </Link>
-        );
-      })}
-    </motion.div>
+      <ul className="flex items-center gap-1 rounded-full border border-border bg-background/85 p-1.5 backdrop-blur-xl shadow-[0_12px_40px_-12px_rgba(0,0,0,0.4)]">
+        {navItems.map((item) => {
+          const active =
+            item.path === "/" ? pathname === "/" : pathname.startsWith(item.path);
+          return (
+            <li key={item.path}>
+              <Link
+                href={item.path}
+                aria-current={active ? "page" : undefined}
+                aria-label={item.name}
+                className={cn(
+                  "flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-medium transition-all",
+                  active
+                    ? "bg-[var(--ink)] text-[color:var(--paper)]"
+                    : "text-muted-foreground",
+                )}
+              >
+                <item.icon size={17} strokeWidth={active ? 2.2 : 1.7} />
+                {active && <span>{item.name}</span>}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </motion.nav>
   );
 }
