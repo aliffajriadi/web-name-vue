@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ImageIcon, Loader2, Plus, Trash2, Upload, Wand2 } from "lucide-react";
-import { IKUpload } from "imagekitio-next";
+import { uploadImage } from "@/lib/imagekit";
+import { useToast } from "@/components/admin/ui";
 import { Field } from "@/components/admin/ui";
 import { unfurlUrl } from "@/lib/api";
 import { parseYouTubeId } from "./extensions";
@@ -35,6 +36,7 @@ export default function BlockDialog({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const upload = useRef<HTMLInputElement>(null);
+  const toast = useToast();
   const [uploading, setUploading] = useState(false);
   const first = useRef<HTMLInputElement>(null);
 
@@ -190,18 +192,31 @@ export default function BlockDialog({
                   {uploading ? <Loader2 className="animate-spin" size={18} /> : <Plus size={20} />}
                 </button>
               </div>
-              <IKUpload
+              <input
                 ref={upload}
+                type="file"
+                accept="image/*"
+                multiple
                 className="hidden"
-                onUploadStart={() => setUploading(true)}
-                onError={() => setUploading(false)}
-                onSuccess={(res) => {
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files || []);
+                  e.target.value = "";
+                  if (!files.length) return;
+                  setUploading(true);
+                  const added: { src: string; alt: string }[] = [];
+                  for (const f of files) {
+                    try {
+                      added.push({ src: await uploadImage(f), alt: "" });
+                    } catch (err) {
+                      toast("error", err instanceof Error ? err.message : "Upload failed");
+                    }
+                  }
+                  setV((d) => ({ ...d, images: [...(d.images ?? []), ...added] }));
                   setUploading(false);
-                  set({ images: [...(v.images ?? []), { src: res.url, alt: "" }] });
                 }}
               />
               <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Upload size={12} /> <ImageIcon size={12} /> Upload one at a time — 2 to 4 images look best.
+                <Upload size={12} /> <ImageIcon size={12} /> 2 to 4 images look best.
               </p>
             </>
           )}

@@ -16,11 +16,11 @@ import { Details, DetailsContent, DetailsSummary } from "@tiptap/extension-detai
 import { createLowlight, common } from "lowlight";
 import {
   Plus, Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3, Quote, X, Camera,
-  Highlighter, Link2, Code, Strikethrough, Unlink,
+  Highlighter, Link2, Code, Strikethrough, Unlink, Loader2,
 } from "lucide-react";
 import NextImage from "next/image";
-import { ImageKitProvider, IKUpload } from "imagekitio-next";
-import { API_BASE_URL } from "@/lib/api";
+import { uploadImage } from "@/lib/imagekit";
+import { useToast } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { ButtonCard, BookmarkCard, Callout, ImageGallery, VideoEmbed } from "./editor/extensions";
 import BlockPicker from "./editor/BlockPicker";
@@ -28,20 +28,7 @@ import BlockDialog from "./editor/Dialogs";
 import ContextBar from "./editor/ContextBar";
 import type { BlockCtx, DialogKind } from "./editor/blocks";
 
-const publicKey = "public_eCQf3j533fEHqgIkNhMjXChRUf4=";
-const urlEndpoint = "https://ik.imagekit.io/8zzj11dsp";
 const lowlight = createLowlight(common);
-
-const authenticator = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/imagekit/auth`);
-    if (!response.ok) throw new Error("Auth failed");
-    return await response.json();
-  } catch (error) {
-    console.error(error);
-    return {};
-  }
-};
 
 interface GhostEditorProps {
   title: string;
@@ -67,8 +54,41 @@ export default function GhostEditor({
   const [wordCount, setWordCount] = useState(() => content.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length);
   const [picker, setPicker] = useState<{ top: number; left: number } | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
-  const ikUploadRef = useRef<HTMLInputElement>(null);
-  const ikFeatureRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(0);
+  const toast = useToast();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const coverRef = useRef<HTMLInputElement>(null);
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null);
+
+  /** Upload images and drop them into the document at `pos` (or the current selection). */
+  const uploadInto = useCallback(
+    async (files: File[], pos?: number) => {
+      const ed = editorRef.current;
+      const images = files.filter((f) => f.type.startsWith("image/"));
+      if (!ed || !images.length) return;
+      setUploading((n) => n + images.length);
+      let at = pos;
+      for (const file of images) {
+        try {
+          const src = await uploadImage(file);
+          const chain = ed.chain().focus();
+          if (at !== undefined) chain.insertContentAt(at, { type: "image", attrs: { src, alt: "" } }).run();
+          else chain.setImage({ src, alt: "" }).run();
+          at = undefined;
+        } catch (e) {
+          toast("error", e instanceof Error ? e.message : "Image upload failed");
+        } finally {
+          setUploading((n) => n - 1);
+        }
+      }
+    },
+    [toast],
+  );
+  const uploadIntoRef = useRef(uploadInto);
+  useEffect(() => {
+    uploadIntoRef.current = uploadInto;
+  }, [uploadInto]);
   const openPickerRef = useRef<() => void>(() => {});
 
   const editor = useEditor({
@@ -108,6 +128,21 @@ export default function GhostEditor({
     },
     editorProps: {
       attributes: { class: "article-prose focus:outline-none min-h-[420px] pb-40" },
+      handlePaste: (_view, e) => {
+        const files = Array.from(e.clipboardData?.files || []).filter((f) => f.type.startsWith("image/"));
+        if (!files.length) return false;
+        e.preventDefault();
+        void uploadIntoRef.current(files);
+        return true;
+      },
+      handleDrop: (view, e) => {
+        const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
+        if (!files.length) return false;
+        e.preventDefault();
+        const pos = view.posAtCoords({ left: e.clientX, top: e.clientY })?.pos;
+        void uploadIntoRef.current(files, pos);
+        return true;
+      },
       handleKeyDown: (view, e) => {
         if (e.key === "/" && !e.metaKey && !e.ctrlKey) {
           const { $from, empty } = view.state.selection;
@@ -123,8 +158,23 @@ export default function GhostEditor({
   });
 
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) editor.commands.setContent(content);
+    editorRef.current = editor;
+  }, [editor]);
+
+  // only sync from the outside when the editor isn't the source of the change
+  useEffect(() => {
+    if (editor && !editor.isFocused && content !== editor.getHTML()) editor.commands.setContent(content, { emitUpdate: false });
   }, [content, editor]);
+
+  const fitTitle = useCallback(() => {
+    const t = titleRef.current;
+    if (!t) return;
+    t.style.height = "auto";
+    t.style.height = `${t.scrollHeight}px`;
+  }, []);
+  useEffect(() => {
+    fitTitle();
+  }, [title, fitTitle]);
 
   const openPicker = useCallback(() => {
     if (!editor) return;
@@ -139,7 +189,7 @@ export default function GhostEditor({
 
   const ctx: BlockCtx = {
     openDialog: (kind) => setDialog({ kind, editing: false }),
-    pickImage: () => ikUploadRef.current?.click(),
+    pickImage: () => fileRef.current?.click(),
   };
 
   const insertFromDialog = (attrs: Record<string, unknown>) => {
@@ -166,7 +216,7 @@ export default function GhostEditor({
   const fmt = (active: boolean) => cn("grid h-9 w-9 place-items-center rounded-md transition-colors hover:bg-white/15", active && "bg-white/20 text-[color:var(--lime)]");
 
   return (
-    <ImageKitProvider publicKey={publicKey} urlEndpoint={urlEndpoint} authenticator={authenticator}>
+    <>
       <div className="relative mx-auto max-w-[760px] bg-background px-4 py-10 text-foreground md:px-0">
         {/* Feature image */}
         <div className="group relative mb-10">
@@ -185,7 +235,7 @@ export default function GhostEditor({
           ) : (
             <button
               type="button"
-              onClick={() => ikFeatureRef.current?.click()}
+              onClick={() => coverRef.current?.click()}
               className="flex items-center gap-2 py-3 text-muted-foreground transition-colors hover:text-foreground"
             >
               <Plus size={18} />
@@ -193,22 +243,36 @@ export default function GhostEditor({
               <Camera size={18} className="ml-1" />
             </button>
           )}
-          <IKUpload ref={ikFeatureRef} className="hidden" onSuccess={(res) => onFeatureImageChange(res.url)} />
+          <input
+            ref={coverRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              e.target.value = "";
+              if (!file) return;
+              setUploading((n) => n + 1);
+              try {
+                onFeatureImageChange(await uploadImage(file));
+              } catch (err) {
+                toast("error", err instanceof Error ? err.message : "Cover upload failed");
+              } finally {
+                setUploading((n) => n - 1);
+              }
+            }}
+          />
         </div>
 
         {/* Title */}
         <textarea
+          ref={titleRef}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Article title"
           aria-label="Article title"
           className="mb-8 h-auto w-full resize-none overflow-hidden border-none bg-transparent font-display text-4xl font-semibold leading-[1.08] tracking-tight outline-none placeholder:text-muted-foreground/30 md:text-5xl"
           rows={1}
-          onInput={(e) => {
-            const t = e.target as HTMLTextAreaElement;
-            t.style.height = "auto";
-            t.style.height = `${t.scrollHeight}px`;
-          }}
         />
 
         <ContextBar editor={editor} onEditCard={(kind, initial) => setDialog({ kind, initial, editing: true })} />
@@ -252,12 +316,24 @@ export default function GhostEditor({
           <button type="button" aria-label="Quote" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={fmt(editor.isActive("blockquote"))}><Quote size={15} /></button>
         </BubbleMenuComponent>
 
-        {/* hidden uploader for the Image block */}
-        <IKUpload
-          ref={ikUploadRef}
+        {/* hidden picker for the Image block */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
           className="hidden"
-          onSuccess={(res) => editor.chain().focus().setImage({ src: res.url, alt: "" }).run()}
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            e.target.value = ""; // allow re-picking the same file
+            void uploadInto(files);
+          }}
         />
+        {uploading > 0 && (
+          <div role="status" className="fixed bottom-5 right-5 z-[220] flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2 text-sm shadow-lg">
+            <Loader2 size={14} className="animate-spin" /> Uploading {uploading > 1 ? `${uploading} images` : "image"}…
+          </div>
+        )}
 
         {picker && <BlockPicker editor={editor} pos={picker} ctx={ctx} onClose={() => setPicker(null)} />}
         {dialog && (
@@ -268,6 +344,6 @@ export default function GhostEditor({
           {wordCount} words · {Math.max(1, Math.round(wordCount / 200))} min
         </div>
       </div>
-    </ImageKitProvider>
+    </>
   );
 }
